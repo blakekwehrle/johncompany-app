@@ -6,6 +6,6 @@ import ComingSoon from './components/ComingSoon.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ComingSoon />
+    <App />
   </StrictMode>,
 )
