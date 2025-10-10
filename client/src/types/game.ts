@@ -3,6 +3,7 @@ import type { RegionId } from "../data/initialState";
 export interface GameState {
   phase: 'event' | 'company' | 'analysis';
   regions: Record<string, Region>;
+  orders: Record<string, Order>;
   currentEvent?: Event;
   eventDeck: Event[];
   discardedEvents: Event[];
@@ -38,6 +39,7 @@ export interface Order {
   priceSecondary: number;
   region: string; // region ID
   neighbors: string[]; // Array of order IDs
+  northPriority: number; //1 is northernmost
 }
 
 export type EventType = 'windfall' | 'turmoil' | 'peace' | 'crisis' | 'leader' | 'foreign_invasion' | 'shuffle';

@@ -239,37 +239,41 @@ export const initialOrders: Record<string, Order> = {
   // Punjab Orders
   '1': {
     id: '1',
-    open: false,
+    open: true,
     price: 7,
     priceSecondary: 3,
     region: REGION_IDS.PUNJAB,
-    neighbors: ['2','7'] 
+    neighbors: ['2','7'], 
+    northPriority: 1,
   },
   
   // Delhi Orders
   '2': {
     id: '2',
-    open: false,
+    open: true,
     price: 5,
     priceSecondary: 2,
     region: REGION_IDS.DELHI,
-    neighbors: ['1','3']
+    neighbors: ['1','3'],
+    northPriority: 1,
   },
   '3': {
     id: '3',
-    open: false,
+    open: true,
     price: 3,
     priceSecondary: 1,
     region: REGION_IDS.DELHI,
-    neighbors: ['2','4','7']
+    neighbors: ['2','4','7'],
+    northPriority: 3,
   },
   '4': {
     id: '4',
-    open: false,
+    open: true,
     price: 5,
     priceSecondary: 2,
     region: REGION_IDS.DELHI,
-    neighbors: ['3','10']
+    neighbors: ['3','10'],
+    northPriority: 2,
   },
   
   // Bengal Orders
@@ -279,7 +283,8 @@ export const initialOrders: Record<string, Order> = {
     price: 5,
     priceSecondary: 2,
     region: REGION_IDS.BENGAL,
-    neighbors: ['10','12','6']
+    neighbors: ['10','12','6'],
+    northPriority: 1,
   },
   '6': {
     id: '6',
@@ -287,105 +292,117 @@ export const initialOrders: Record<string, Order> = {
     price: 6,
     priceSecondary: 3,
     region: REGION_IDS.BENGAL,
-    neighbors: ['5']
+    neighbors: ['5'],
+    northPriority: 2,
   },
   
   // Bombay Orders
   '7': {
     id: '7',
-    open: false,
+    open: true,
     price: 3,
     priceSecondary: 1,
     region: REGION_IDS.BOMBAY,
-    neighbors: ['1','3','9']
+    neighbors: ['1','3','9'],
+    northPriority: 1,
   },
   '8': {
     id: '8',
-    open: false,
+    open: true,
     price: 3,
     priceSecondary: 1,
     region: REGION_IDS.BOMBAY,
-    neighbors: ['9','11']
+    neighbors: ['9','11'],
+    northPriority: 2,
   },
   '9': {
     id: '9',
-    open: false,
+    open: true,
     price: 4,
     priceSecondary: 2,
     region: REGION_IDS.BOMBAY,
-    neighbors: ['7','8','14']
+    neighbors: ['7','8','14'],
+    northPriority: 3,
   },
   
   // Maratha Orders
   '10': {
     id: '10',
-    open: false,
+    open: true,
     price: 4,
     priceSecondary: 2,
     region: REGION_IDS.MARATHA,
-    neighbors: ['4','6']
+    neighbors: ['4','6'],
+    northPriority: 1,
   },
   '11': {
     id: '11',
-    open: false,
+    open: true,
     price: 3,
     priceSecondary: 1,
     region: REGION_IDS.MARATHA,
-    neighbors: ['8','12']
+    neighbors: ['8','12'],
+    northPriority: 2,
   },
   '12': {
     id: '12',
-    open: false,
+    open: true,
     price: 2,
     priceSecondary: 1,
     region: REGION_IDS.MARATHA,
-    neighbors: ['11','5','13']
+    neighbors: ['11','5','13'],
+    northPriority: 3,
   },
   
   // Hyderabad Orders
   '13': {
     id: '13',
-    open: false,
+    open: true,
     price: 7,
     priceSecondary: 3,
     region: REGION_IDS.HYDERABAD,
-    neighbors: ['12','15','16']
+    neighbors: ['12','15','16'],
+    northPriority: 1,
   },
   
   // Mysore Orders
   '14': {
     id: '14',
-    open: false,
+    open: true,
     price: 3,
     priceSecondary: 1,
     region: REGION_IDS.MYSORE,
-    neighbors: ['9','15']
+    neighbors: ['9','15'],
+    northPriority: 1,
   },
   '15': {
     id: '15',
-    open: false,
+    open: true,
     price: 6,
     priceSecondary: 3,
     region: REGION_IDS.MYSORE,
-    neighbors: ['14','13','17']
+    neighbors: ['14','13','17'],
+    northPriority: 2,
   },
   
   // Madras Orders
   '16': {
     id: '16',
-    open: false,
+    open: true,
     price: 5,
     priceSecondary: 2,
     region: REGION_IDS.MADRAS,
-    neighbors: ['13','17']
+    neighbors: ['13','17'],
+    northPriority: 1,
   },
   '17': {
     id: '17',
-    open: false,
+    open: true,
     price: 4,
     priceSecondary: 2,
     region: REGION_IDS.MADRAS,
-    neighbors: ['16','15']
+    neighbors: ['16','15'],
+    northPriority: 2,
   },
 };
 
@@ -521,6 +538,7 @@ export const initialElephantState: ElephantState = {
 export const initialState: GameState = {
   phase: 'company',
   regions: initialRegions,
+  orders: initialOrders,
   eventDeck: initialEventDeck,
   discardedEvents: [],
   turn: 1,

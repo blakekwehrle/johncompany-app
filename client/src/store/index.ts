@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { GameState, Region, Order, Event, ElephantShape, EventType } from '../types/game';
-import { initialState, getOrdersByRegion, getNeighboringRegions, getOrderById, initialEventDeck } from '../data/initialState';
+import { initialState, getOrdersByRegion, getNeighboringRegions, getOrderById, initialEventDeck, REGION_IDS } from '../data/initialState';
+import { closeNorthernmostOrder, areAllOrdersClosed, cascadeCloseOrders, startCascade } from '../utils/gameLogic';
 
 interface GameStore {
   // State
@@ -24,7 +25,9 @@ interface GameStore {
   resolveLeader: (regionId: string) => void;
   resolveForeignInvasion: (regionId: string) => void;
   resolveShuffle: (regionId: string) => void;
-  
+  triggerTurmoilTest:(regionId: string)=> void;
+  resetAllOrders: () => void;
+  setAllOrdersOpen: () => void;
   // Helper functions
   getRegion: (regionId: string) => Region | undefined;
   getRegionOrders: (regionId: string) => Order[];
@@ -202,19 +205,22 @@ export const useGameStore = create<GameStore>()(
       resolveTurmoil: (regionId: string) => {
         console.log(`Resolving turmoil for region: ${regionId}`);
         const state = get();
-        const region = state.gameState.regions[regionId];
         
-        if (region) {
-          // Simple turmoil effect - close one order in the region
-          //need to revisit each event itself.
-          if (region.orders.length > 0) {
-            const orderToClose = region.orders[0];
-            console.log(`Closing order: ${orderToClose} in ${regionId}`);
-          }
+        // Check if all orders are already closed in this region
+        if (areAllOrdersClosed(state.gameState, regionId)) {
+          console.log(`All orders already closed in ${regionId}, starting cascade...`);
+          const newState = startCascade(state.gameState, regionId);
+          set({ gameState: newState });
+        } else {
+          // Close the northernmost open order
+          const newState = closeNorthernmostOrder(state.gameState, regionId);
+          set({ gameState: newState });
         }
         
         get().completeEvent();
       },
+
+
 
       resolvePeace: (regionId: string, shape: ElephantShape = undefined) => {
         console.log(`Resolving peace event for region: ${regionId}, moving to ${shape} border`);
@@ -423,7 +429,54 @@ export const useGameStore = create<GameStore>()(
 
       getRegionOrders: (regionId: string) => {
         return getOrdersByRegion(regionId as any);
-      }
+      },
+      
+      triggerTurmoilTest: (regionId: string) => {
+        console.log(`=== MANUAL Turmoil TEST IN ${regionId} ===`);
+        const state = get();
+        state.resolveTurmoil(regionId)
+      },
+
+      resetAllOrders: () => {
+        const state = get();
+        const updatedOrders = { ...state.gameState.orders };
+        
+        // Reset all orders to their initial open state
+        Object.keys(updatedOrders).forEach(orderId => {
+          updatedOrders[orderId] = {
+            ...updatedOrders[orderId],
+            open: true
+          };
+        });
+
+        set({
+          gameState: {
+            ...state.gameState,
+            orders: updatedOrders
+          }
+        });
+        console.log('All orders reset to open');
+      },
+
+      setAllOrdersOpen: () => {
+        const state = get();
+        const updatedOrders = { ...state.gameState.orders };
+        
+        Object.keys(updatedOrders).forEach(orderId => {
+          updatedOrders[orderId] = {
+            ...updatedOrders[orderId],
+            open: true
+          };
+        });
+
+        set({
+          gameState: {
+            ...state.gameState,
+            orders: updatedOrders
+          }
+        });
+        console.log('All orders set to open');
+      },
     }),
     {
       name: 'joco-game-storage',

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGameStore } from './store';
-import { REGION_IDS } from './data/initialState';
+import { REGION_IDS, type RegionId } from './data/initialState';
 import type { EventType } from './types/game';
 
 function App() {
@@ -17,9 +17,14 @@ function App() {
     resolveShuffle,
     updateRegion,
     resetGame,
-    getNextEventRegion
+    getNextEventRegion,
+    triggerTurmoilTest,
+    resetAllOrders,
+    setAllOrdersOpen,
   } = useGameStore();
 
+  const [selectedTestRegion, setSelectedTestRegion] = useState<RegionId>(REGION_IDS.PUNJAB);
+  
   const handleEventResolution = () => {
     const currentEvent = gameState.currentEvent;
     if (!currentEvent) return;
@@ -83,7 +88,7 @@ function App() {
         )}
       </div>
 
-      {/* Controls */}
+      {/* controls */}
       <div className="mb-4 space-x-2">
         <button 
           onClick={startEventPhase}
@@ -100,7 +105,51 @@ function App() {
           Reset Game
         </button>
       </div>
-
+       {/* Cascade Testing Controls */}
+      <div className="mb-6 p-4 border border-purple-300 bg-purple-50 rounded">
+        <h2 className="text-lg font-bold mb-2 text-purple-800">Turmoil & Cascade Testing</h2>
+        
+        <div className="flex flex-wrap gap-2 mb-3">
+          <button 
+            onClick={resetAllOrders}
+            className="bg-green-500 text-white px-3 py-1 rounded text-sm"
+          >
+            Reset All Orders
+          </button>
+          
+          <button 
+            onClick={setAllOrdersOpen}
+            className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+          >
+            All Orders Open
+          </button>
+          
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium">Test Turmoil in:</label>
+          <select 
+            value={selectedTestRegion}
+            onChange={(e) => setSelectedTestRegion(e.target.value as RegionId)}
+            className="border rounded px-2 py-1 text-sm"
+          >
+            {Object.values(REGION_IDS).map(regionId => (
+              <option key={regionId} value={regionId}>{regionId}</option>
+            ))}
+          </select>
+          
+          <button 
+            onClick={() => triggerTurmoilTest(selectedTestRegion)}
+            className="bg-purple-600 text-white px-3 py-1 rounded text-sm"
+          >
+            Test Turmoil
+          </button>
+        </div>
+        
+        <div className="mt-2 text-xs text-purple-600">
+          <p>Note: Cascade only triggers if ALL orders in the region are closed</p>
+        </div>
+      </div>
       {/* Current Event Display */}
       {gameState.currentEvent && (
         <div className={`mb-4 p-4 border-2 rounded ${getEventColor(gameState.currentEvent.type)}`}>
@@ -153,9 +202,47 @@ function App() {
             <p>Unrest: {region.unrest}</p>
             <p>Tower: {region.towerHeight}</p>
             <p>Company: {region.companyControlled ? 'Yes' : 'No'}</p>
-            <p>Orders: {region.orders.length}</p>
+            <div className="text-sm">
+              Orders: 
+              {region.orders.map(orderId => {
+                const order = gameState.orders?.[orderId]; // Safe access with optional chaining
+                if (!order) {
+                  return (
+                    <div key={orderId} className="ml-2 text-gray-400">
+                      • Order {orderId}: NOT FOUND
+                    </div>
+                  );
+                }
+                return (
+                  <div key={orderId} className={`ml-2 ${order.open ? 'text-green-600' : 'text-red-600'}`}>
+                    • Order {orderId} (P{order.northPriority}): {order.open ? 'OPEN' : 'CLOSED'}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-6">
+        <h3 className="font-bold mb-2">Order Connections</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          {Object.values(gameState.orders).map(order => (
+            <div key={order.id} className={`p-2 border rounded ${order.open ? 'bg-green-50' : 'bg-red-50'}`}>
+              <div className="flex justify-between">
+                <span className="font-medium">Order {order.id}</span>
+                <span className={order.open ? 'text-green-600' : 'text-red-600'}>
+                  {order.open ? 'OPEN' : 'CLOSED'}
+                </span>
+              </div>
+              <div className="text-xs text-gray-600">
+                <div>Region: {order.region}</div>
+                <div>North Priority: {order.northPriority}</div>
+                <div>Neighbors: {order.neighbors.join(', ')}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Debug Info */}

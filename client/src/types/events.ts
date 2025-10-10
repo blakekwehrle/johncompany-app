@@ -29,7 +29,7 @@ const addTowerLevel = (state: GameState, regionId: string): GameState => {
 };
 
 export const events: Event[] = [
-  // WINFALL EVENT
+  // WINDFALL EVENT
   //these are probably gonna be updated from the new ones in intitial state
   {
     id: 'windfall_bombay',
