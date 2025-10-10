@@ -99,7 +99,7 @@ export const useGameStore = create<GameStore>()(
         get().startStormRoll();
         
         // Simulate animation duration (you can adjust this)
-        const animationDuration = 1500; // 1.5 seconds
+        const animationDuration = 1150; 
         
         setTimeout(() => {
           get().completeStormRoll(stormRoll);

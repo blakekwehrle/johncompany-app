@@ -54,7 +54,7 @@ export interface ElephantState {
   isWithinRegion: boolean; 
 }
 
-export type StormDirection = 'east' | 'west' | 'south' | 'none';
+export type StormDirection = 'the east' | 'the west' | 'the south' | 'all seas' |'none';
 
 export interface StormDieSide {
   value: number;

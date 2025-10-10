@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useGameStore } from './store';
 import { REGION_IDS, type RegionId } from './data/initialState';
 import type { EventType } from './types/game';
-import { diceAnimation, getRegionsByStormDirection, rollStormDie } from './data/storm';
+import { diceAnimation, rollStormDie } from './data/storm';
 
 function App() {
   const { 
@@ -144,7 +144,7 @@ function App() {
                     <div className="text-2xl font-bold text-blue-700 mb-1">
                       {gameState.storm.currentRoll.direction === 'none' 
                         ? `${gameState.storm.currentRoll.value} Event${gameState.storm.currentRoll.value > 1 ? 's' : ''}`
-                        : `STORMS IN THE ${gameState.storm.currentRoll.direction.toUpperCase()}!`
+                        : `STORMS IN ${gameState.storm.currentRoll.direction.toUpperCase()}!`
                       }
                     </div>
                     
