@@ -1,4 +1,4 @@
-import type { GameState, Order } from '../types/game';
+import type { GameState, Order, Storm } from '../types/game';
 
 export const closeNorthernmostOrder = (state: GameState, regionId: string): GameState => {
   const region = state.regions[regionId];

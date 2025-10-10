@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GameState, Region, Order, Event, ElephantShape, EventType } from '../types/game';
+import type { GameState, Region, Order, Event, ElephantShape, EventType, StormDieSide } from '../types/game';
 import { initialState, getOrdersByRegion, getNeighboringRegions, getOrderById, initialEventDeck, REGION_IDS } from '../data/initialState';
 import { closeNorthernmostOrder, areAllOrdersClosed, cascadeCloseOrders, startCascade } from '../utils/gameLogic';
+import { getRegionsByStormDirection, rollStormDie } from '../data/storm';
 
 interface GameStore {
   // State
@@ -39,6 +40,11 @@ interface GameStore {
   
   // Helper functions
   getCrisisType: () => 'rebellion' | 'invasion' | 'attack_on_company';
+  rollStormDie: () => StormDieSide;
+  startEventPhaseWithStorm: () => void;
+  resolveStormEvents: () => void;
+  startStormRoll: () => void;
+  completeStormRoll: (stormRoll: StormDieSide) => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -54,6 +60,91 @@ export const useGameStore = create<GameStore>()(
           }
         }));
         get().drawEvent();
+      },
+      startStormRoll: () => {
+        console.log('Starting storm die roll animation...');
+        
+        set((state) => ({
+          gameState: {
+            ...state.gameState,
+            storm: {
+              ...state.gameState.storm,
+              isRolling: true,
+              currentRoll: undefined // Clear previous roll during animation
+            }
+          }
+        }));
+      },
+
+      // Complete the storm roll after animation
+      completeStormRoll: (stormRoll: StormDieSide) => {
+        console.log(`Storm die roll completed: ${stormRoll.value} events, direction: ${stormRoll.direction}`);
+        
+        set((state) => ({
+          gameState: {
+            ...state.gameState,
+            storm: {
+              ...state.gameState.storm,
+              isRolling: false,
+              currentRoll: stormRoll
+            },
+            eventsRemaining: stormRoll.value
+          }
+        }));
+      },
+
+      // Updated rollStormDie with animation
+      rollStormDie: () => {
+        const stormRoll = rollStormDie();
+        get().startStormRoll();
+        
+        // Simulate animation duration (you can adjust this)
+        const animationDuration = 1500; // 1.5 seconds
+        
+        setTimeout(() => {
+          get().completeStormRoll(stormRoll);
+        }, animationDuration);
+        
+        return stormRoll;
+      },
+
+      // Updated startEventPhaseWithStorm with animation
+      startEventPhaseWithStorm: () => {
+        const stormRoll = get().rollStormDie();
+        
+        set((state) => ({
+          gameState: {
+            ...state.gameState,
+            phase: 'event',
+            eventsRemaining: stormRoll.value
+          }
+        }));
+        
+        // Wait for animation to complete before starting events
+        setTimeout(() => {
+          if (stormRoll.value > 0) {
+            get().resolveStormEvents();
+          } else {
+            console.log('No events to resolve from storm die');
+          }
+        }, 1600); // Slightly longer than animation duration
+      },
+      // Resolve events from storm die roll
+      resolveStormEvents: () => {
+        const state = get();
+        
+        if (state.gameState.eventsRemaining <= 0) {
+          console.log('No events remaining to resolve');
+          return;
+        }
+
+        console.log(`Resolving event ${state.gameState.eventsRemaining} of ${state.gameState.storm.currentRoll?.value}`);
+        
+        // Draw and resolve one event
+        get().drawEvent();
+        
+        // Note: The event resolution will be handled by the existing handleEventResolution
+        // After the event is resolved, we'll decrement eventsRemaining in completeEvent
       },
       moveElephant: (tailRegion: string, headRegion: string, isWithinRegion: boolean = false) => {
         set((state) => ({
@@ -171,24 +262,38 @@ export const useGameStore = create<GameStore>()(
 
       completeEvent: () => {
         const state = get();
-        const currentEvent = state.gameState.currentEvent;
-        if (currentEvent) {
-          // apply event effect with current region
+        if (state.gameState.currentEvent) {
+          const currentEvent = state.gameState.currentEvent;
+          
+          // Apply the event effect with the current region
           const newGameState = currentEvent.effect(
             state.gameState, 
             currentEvent.currentRegion || currentEvent.regionBack
           );
           
+          // Decrement events remaining
+          const eventsRemaining = Math.max(0, state.gameState.eventsRemaining - 1);
+          
           set({
             gameState: {
               ...newGameState,
               currentEvent: undefined,
-              phase: 'company',
-              turn: state.gameState.turn + 1
+              eventsRemaining: eventsRemaining,
+              // Only change phase back to company when no events remain
+              phase: eventsRemaining === 0 ? 'company' : 'event',
+              turn: eventsRemaining === 0 ? state.gameState.turn + 1 : state.gameState.turn
             }
           });
+          
+          // If there are more events to resolve, draw the next one
+          if (eventsRemaining > 0) {
+            setTimeout(() => {
+              get().resolveStormEvents();
+            }, 100); // Small delay for better UX
+          }
         }
       },
+
 
       resolveWindfall: (regionId: string) => {
         console.log(`Resolving windfall for region: ${regionId}`);
@@ -343,7 +448,43 @@ export const useGameStore = create<GameStore>()(
       },
 
       resolveForeignInvasion: (regionId: string) => {
-        console.log(`Resolving foreign invasion affecting: ${regionId}`);
+        console.log('Resolving foreign invasion with storm die roll');
+        const state = get();
+        
+        // Roll storm die for foreign invasion
+        const stormRoll = get().rollStormDie();
+        let invasionRegions: string[] = [];
+        
+        if (stormRoll.direction === 'none') {
+          // Use the region from the event (regionId) if storm die is 'none'
+          invasionRegions = [regionId];
+        } else {
+          // Use the regions from the storm direction
+          invasionRegions = getRegionsByStormDirection(stormRoll.direction);
+        }
+        
+        console.log(`Foreign invasion in regions: ${invasionRegions.join(', ')}`);
+        
+        // Resolve invasion for each region
+        invasionRegions.forEach(invasionRegionId => {
+          // Simulate invasion resolution
+          console.log(`Invasion in ${invasionRegionId}: Rolling attack die`);
+          const attackRoll = Math.floor(Math.random() * 6) + 1; // 1d6
+          console.log(`Attack strength: ${attackRoll}`);
+          
+          // Basic invasion logic - you can expand this later
+          const region = state.gameState.regions[invasionRegionId];
+          if (region) {
+            if (region.companyControlled) {
+              console.log(`Company defense in ${invasionRegionId}`);
+              // Company defense logic would go here
+            } else {
+              console.log(`Invasion against sovereign region ${invasionRegionId}`);
+              // Sovereign region invasion logic would go here
+            }
+          }
+        });
+        
         get().completeEvent();
       },
 
@@ -481,7 +622,13 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'joco-game-storage',
       partialize: (state) => ({ 
-        gameState: state.gameState 
+        gameState: {
+          ...state.gameState,
+          storm: {
+            ...state.gameState.storm,
+            isRolling: false // Always reset to false when saving
+          }
+        }
       }),
     }
   )

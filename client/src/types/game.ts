@@ -10,7 +10,9 @@ export interface GameState {
   turn: number;
   year: number;
   history: GameState[];
-  
+  storm: Storm;
+  eventsRemaining: number; 
+
   elephant: ElephantState;
   
   stormDie?: 'east' | 'west' | 'south' | 'none';
@@ -50,6 +52,20 @@ export interface ElephantState {
   tailRegion: string; 
   headRegion: string;
   isWithinRegion: boolean; 
+}
+
+export type StormDirection = 'east' | 'west' | 'south' | 'none';
+
+export interface StormDieSide {
+  value: number;
+  direction: StormDirection;
+  image: string;
+}
+
+export interface Storm {
+  dieSides: StormDieSide[];
+  currentRoll?: StormDieSide;
+  isRolling: boolean;
 }
 
 export interface EventDeck {

@@ -1,4 +1,5 @@
 import type { GameState, Region, Order, Event, ElephantState } from '../types/game';
+import { stormDie } from './storm';
 
 
 export const REGION_IDS = {
@@ -209,11 +210,12 @@ export const initialEventDeck: Event[] = shuffleArray([
     title: 'Foreign Invasion',
     description: 'Roll storm die for invasions in east, west, south, or top region.',
     regionBack: REGION_IDS.MADRAS,
-    strength: undefined,
+    strength: '2',
     crisisModifier: 0,
-    effect: (state: GameState, currentRegion: string) => {
-      console.log(`Foreign invasion affecting ${currentRegion}`);
-      return state;
+    effect: (state: GameState) => {
+     console.log(`Foreign invasion event - storm die will determine affected regions`);
+      // The actual resolution happens in the store's resolveForeignInvasion
+     return state;
     }
   },
 
@@ -547,4 +549,6 @@ export const initialState: GameState = {
   elephant: initialElephantState, 
   stormDie: 'none',
   crisisType: undefined,
+  storm: stormDie,
+  eventsRemaining: 0,
 };

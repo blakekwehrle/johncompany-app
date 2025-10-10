@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGameStore } from './store';
 import { REGION_IDS, type RegionId } from './data/initialState';
 import type { EventType } from './types/game';
+import { diceAnimation, getRegionsByStormDirection, rollStormDie } from './data/storm';
 
 function App() {
   const { 
     gameState, 
-    startEventPhase, 
+    startEventPhaseWithStorm, 
+    rollStormDie,
     completeEvent,
     resolveWindfall,
     resolveTurmoil,
@@ -23,8 +25,21 @@ function App() {
     setAllOrdersOpen,
   } = useGameStore();
 
+  const [showFinalResult, setShowFinalResult] = useState(false);
   const [selectedTestRegion, setSelectedTestRegion] = useState<RegionId>(REGION_IDS.PUNJAB);
   
+  useEffect(() => {
+    if (gameState.storm.isRolling) {
+      setShowFinalResult(false);
+    } else if (gameState.storm.currentRoll && !showFinalResult) {
+      // Small delay after animation completes to show final result
+      const timer = setTimeout(() => {
+        setShowFinalResult(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.storm.isRolling, gameState.storm.currentRoll, showFinalResult]);
+
   const handleEventResolution = () => {
     const currentEvent = gameState.currentEvent;
     if (!currentEvent) return;
@@ -81,15 +96,100 @@ function App() {
       <div className="mb-4">
         <p>Turn: {gameState.turn} | Year: {gameState.year} | Phase: {gameState.phase}</p>
         <p>Events in deck: {gameState.eventDeck.length} | Discarded: {gameState.discardedEvents.length}</p>
-        {gameState.eventDeck.length > 0 && (
-          <p className="text-sm text-gray-600">
-            Next event region: {getNextEventRegion()}
+        {gameState.eventsRemaining > 0 && (
+          <p className="text-blue-600 font-semibold">
+            Events remaining: {gameState.eventsRemaining}
           </p>
         )}
       </div>
 
-      {/* controls */}
+       {/* Storm Die Display with Animation */}
+      {((gameState.storm.isRolling || gameState.storm.currentRoll)) && (
+        <div className="mb-4 p-4 border-2 border-blue-400 bg-blue-50 rounded-lg shadow-sm">
+          <h3 className="text-lg font-bold text-blue-800 mb-2">
+            {gameState.storm.isRolling ? 'Rolling Storm Die...' : 'Storm Die Result'}
+          </h3>
+          <div className="flex items-center gap-6">
+            {/* Dice Image/Animation */}
+            <div className="flex-shrink-0">
+              {gameState.storm.isRolling ? (
+                // Show animation during roll
+                <img 
+                  src={diceAnimation}
+                  alt="Rolling storm die..."
+                  className="w-16 h-16 object-contain border-2 border-blue-300 rounded-lg"
+                />
+              ) : (
+                // Show final result after animation
+                showFinalResult && gameState.storm.currentRoll && (
+                  <img 
+                    src={gameState.storm.currentRoll.image} 
+                    alt={`Storm die: ${gameState.storm.currentRoll.value} events, ${gameState.storm.currentRoll.direction}`}
+                    className="w-16 h-16 object-contain border-2 border-blue-300 rounded-lg transition-opacity duration-300"
+                    style={{ opacity: showFinalResult ? 1 : 0 }}
+                  />
+                )
+              )}
+            </div>
+            
+            {/* Die Information */}
+            <div className="flex-grow">
+              {gameState.storm.isRolling ? (
+                <div className="text-xl font-bold text-blue-600 animate-pulse">
+                  Rolling...
+                </div>
+              ) : (
+                showFinalResult && gameState.storm.currentRoll && (
+                  <>
+                    <div className="text-2xl font-bold text-blue-700 mb-1">
+                      {gameState.storm.currentRoll.direction === 'none' 
+                        ? `${gameState.storm.currentRoll.value} Event${gameState.storm.currentRoll.value > 1 ? 's' : ''}`
+                        : `STORMS IN THE ${gameState.storm.currentRoll.direction.toUpperCase()}!`
+                      }
+                    </div>
+                    
+                    {gameState.eventsRemaining > 0 && (
+                      <p className="font-semibold text-blue-800">
+                        Events remaining: {gameState.eventsRemaining}
+                      </p>
+                    )}
+                  </>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Controls */}
       <div className="mb-4 space-x-2">
+        <button 
+          onClick={startEventPhaseWithStorm}
+          disabled={gameState.phase === 'event'}
+          className="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
+        >
+          Start Event Phase (Roll Storm Die)
+        </button>
+        
+        <button 
+          onClick={rollStormDie}
+
+          disabled={gameState.storm.isRolling === true}
+          className="bg-cyan-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
+        >
+          Roll Storm Die Only
+        </button>
+        
+        <button 
+          onClick={resetGame}
+          className="bg-red-500 text-white px-4 py-2 rounded"
+        >
+          Reset Game
+        </button>
+      </div>
+
+      {/* controls */}
+      {/* <div className="mb-4 space-x-2">
         <button 
           onClick={startEventPhase}
           disabled={gameState.phase === 'event'}
@@ -104,7 +204,42 @@ function App() {
         >
           Reset Game
         </button>
-      </div>
+      </div> */}
+      {/* Current Event Display */}
+      {gameState.currentEvent && (
+        <div className={`mb-4 p-4 border-2 rounded ${getEventColor(gameState.currentEvent.type)}`}>
+          <div className="flex justify-between items-start mb-2">
+            <h2 className="text-xl font-bold">{gameState.currentEvent.title}</h2>
+            <span className="px-2 py-1 bg-gray-200 rounded text-sm capitalize">
+              {gameState.currentEvent.type.replace('_', ' ')}
+            </span>
+          </div>
+          
+          <p className="mb-4">{gameState.currentEvent.description}</p>
+          
+          <div className="text-sm text-gray-600 mb-4 space-y-1">
+            <div className="flex justify-between">
+              <span>Event Happening In:</span>
+              <strong className="text-blue-700">{gameState.currentEvent.currentRegion}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span>Chosen Region (Next Card Shows):</span>
+              <span>{getNextEventRegion() || 'End of deck'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>This Cards Back:</span>
+              <span>{gameState.currentEvent.regionBack}</span>
+            </div>
+          </div>
+          
+          <button 
+            onClick={handleEventResolution}
+            className="bg-green-500 text-white px-4 py-2 rounded"
+          >
+            Resolve Event
+          </button>
+        </div>
+      )}
        {/* Cascade Testing Controls */}
       <div className="mb-6 p-4 border border-purple-300 bg-purple-50 rounded">
         <h2 className="text-lg font-bold mb-2 text-purple-800">Turmoil & Cascade Testing</h2>
@@ -150,42 +285,6 @@ function App() {
           <p>Note: Cascade only triggers if ALL orders in the region are closed</p>
         </div>
       </div>
-      {/* Current Event Display */}
-      {gameState.currentEvent && (
-        <div className={`mb-4 p-4 border-2 rounded ${getEventColor(gameState.currentEvent.type)}`}>
-          <div className="flex justify-between items-start mb-2">
-            <h2 className="text-xl font-bold">{gameState.currentEvent.title}</h2>
-            <span className="px-2 py-1 bg-gray-200 rounded text-sm capitalize">
-              {gameState.currentEvent.type.replace('_', ' ')}
-            </span>
-          </div>
-          
-          <p className="mb-4">{gameState.currentEvent.description}</p>
-          
-          <div className="text-sm text-gray-600 mb-4 space-y-1">
-            <div className="flex justify-between">
-              <span>Event Happening In:</span>
-              <strong className="text-blue-700">{gameState.currentEvent.currentRegion}</strong>
-            </div>
-            <div className="flex justify-between">
-              <span>Chosen Region (Next Card Shows):</span>
-              <span>{getNextEventRegion() || 'End of deck'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>This Cards Back:</span>
-              <span>{gameState.currentEvent.regionBack}</span>
-            </div>
-          </div>
-          
-          <button 
-            onClick={handleEventResolution}
-            className="bg-green-500 text-white px-4 py-2 rounded"
-          >
-            Resolve Event
-          </button>
-        </div>
-      )}
-
       {/* Regions List */}
       <div className="grid grid-cols-2 gap-4">
         {Object.values(gameState.regions).map(region => (
