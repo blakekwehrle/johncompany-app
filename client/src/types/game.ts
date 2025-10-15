@@ -4,9 +4,10 @@ export interface GameState {
   phase: 'event' | 'company' | 'analysis';
   regions: Record<string, Region>;
   orders: Record<string, Order>;
-  currentEvent?: Event;
-  eventDeck: Event[];
-  discardedEvents: Event[];
+  currentEventId?: string; //eventids instead of event objects
+  currentEventRegion?: string; 
+  eventDeck: string[];
+  discardedEvents: string[];
   turn: number;
   year: number;
   history: GameState[];
@@ -76,16 +77,19 @@ export interface Event {
   id: string;
   type: EventType;
   title: string;
+  image: string;
+  imageBack: string;
   description: string;
   imageUrl?: string;
   regionBack: string; // region on the back of this card/event
   strength?: string;
-  effect: (state: GameState, currentRegion: string) => GameState; 
-
   crisisModifier: number;
   currentRegion?: string;
   shape?: ElephantShape;
-  stormDirection?: 'east' | 'west' | 'south' | 'none';  // for foreign invasion
+}
+
+export interface EventDefinition extends Event {
+  effect: (state: GameState, currentRegion: string) => GameState;
 }
 
 export interface UIState {
