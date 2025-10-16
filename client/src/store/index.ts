@@ -436,13 +436,13 @@ export const useGameStore = create<GameStore>()(
         }));
         
         // Safety timeout
-        setTimeout(() => {
-          const state = get();
-          if (state.gameState.storm.isRolling) {
-            console.warn('Rolling state timeout - cancelling');
-            get().cancelRollingState();
-          }
-        }, 10000);
+        // setTimeout(() => {
+        //   const state = get();
+        //   if (state.gameState.storm.isRolling) {
+        //     console.warn('Rolling state timeout - cancelling');
+        //     get().cancelRollingState();
+        //   }
+        // }, 10000);
       },
 
       completeStormRoll: (stormRoll: any) => {

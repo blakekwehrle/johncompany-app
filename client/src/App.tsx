@@ -3,6 +3,18 @@ import { useGameStore } from './store';
 import { REGION_IDS, type RegionId } from './data/initialState';
 import type { EventType } from './types/game';
 import { diceAnimation } from './data/storm';
+import { getEventDefinition } from './types/events';
+
+// Import ganjifa images
+import blank_img from './assets/images/ganjifa/backs/ganjifa_blank.png';
+import bengal_img from './assets/images/ganjifa/backs/ganjifa_bengal.png';
+import bombay_img from './assets/images/ganjifa/backs/ganjifa_bombay.png';
+import delhi_img from './assets/images/ganjifa/backs/ganjifa_delhi.png';
+import hyderabad_img from './assets/images/ganjifa/backs/ganjifa_hyderabad.png';
+import madras_img from './assets/images/ganjifa/backs/ganjifa_madras.png';
+import maratha_img from './assets/images/ganjifa/backs/ganjifa_maratha.png';
+import mysore_img from './assets/images/ganjifa/backs/ganjifa_mysore.png';
+import punjab_img from './assets/images/ganjifa/backs/ganjifa_punjab.png';
 
 function App() {
   const { 
@@ -45,6 +57,36 @@ function App() {
   const currentEvent = getCurrentEvent();
   const currentEventRegion = getCurrentEventRegion();
 
+  // Map region IDs to their back images
+  const regionBackImages: Record<string, string> = {
+    [REGION_IDS.PUNJAB]: punjab_img,
+    [REGION_IDS.DELHI]: delhi_img,
+    [REGION_IDS.BENGAL]: bengal_img,
+    [REGION_IDS.BOMBAY]: bombay_img,
+    [REGION_IDS.MARATHA]: maratha_img,
+    [REGION_IDS.HYDERABAD]: hyderabad_img,
+    [REGION_IDS.MYSORE]: mysore_img,
+    [REGION_IDS.MADRAS]: madras_img,
+  };
+
+  // Get the top card of the deck for display
+  const getTopDeckCard = () => {
+    if (gameState.eventDeck.length > 0) {
+      const topEventId = gameState.eventDeck[0];
+      const topEvent = getEventDefinition(topEventId);
+      return {
+        image: regionBackImages[topEvent.regionBack] || blank_img,
+        region: topEvent.regionBack
+      };
+    }
+    return {
+      image: blank_img,
+      region: 'Empty'
+    };
+  };
+
+  const topDeckCard = getTopDeckCard();
+
   const getEventColor = (type: EventType): string => {
     const colors = {
       windfall: 'bg-green-100 border-green-500',
@@ -63,20 +105,146 @@ function App() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">John Company Companion</h1>
+      <h1 className="text-2xl font-bold mb-1">John Company Companion</h1>
       
       {/* Game Info */}
-      <div className="mb-4">
-        <p>Turn: {gameState.turn} | Year: {gameState.year} | Phase: {gameState.phase}</p>
-        <p>Events in deck: {gameState.eventDeck.length} | Discarded: {gameState.discardedEvents.length}</p>
+      {/* Ganjifa Card Display */}
+      <div className="mb-4 p-2 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl border-2 border-amber-200 shadow-lg">
+        
+        <div className="flex flex-col md:flex-row justify-center items-center gap-8">
+          {/* Event Deck */}
+          <div className="text-center">
+            <h3 className="font-bold text-amber-700 mb-3">Event Deck</h3>
+            <div className="relative">
+              {/* Deck stack effect */}
+              <div className="absolute -bottom-2 -right-2 w-40 h-40 rounded-full border-2 border-amber-400 bg-amber-200 opacity-60"></div>
+              <div className="absolute -bottom-1 -right-1 w-40 h-40 rounded-full border-2 border-amber-500 bg-amber-300 opacity-80"></div>
+              
+              {/* Top card */}
+              <img 
+                src={topDeckCard.image} 
+                alt={`Next region: ${topDeckCard.region}`}
+                className="w-40 h-40 rounded-full border-4 border-amber-600 shadow-xl relative z-10"
+              />
+              
+              {/* Card count badge */}
+              <div className="absolute -top-2 -right-2 bg-amber-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold shadow-md z-20">
+                {gameState.eventDeck.length}
+              </div>
+            </div>
+            <p className="mt-3 text-s text-amber-600">
+              {gameState.eventDeck.length} cards remaining
+            </p>
+          
+          </div>
+
+          {/* Current Event Card */}
+          <div className="text-center">
+            <h3 className="font-bold text-amber-700 mb-3">Current Event</h3>
+            {currentEvent ? (
+              <div className="relative">
+                <img 
+                  src={currentEvent.image} 
+                  alt={currentEvent.title}
+                  className="w-40 h-40 rounded-full border-4 border-yellow-500 shadow-xl"
+                />
+                <div className="absolute -top-2 -right-2 bg-yellow-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold shadow-md">
+                  !
+                </div>
+              </div>
+            ) : (
+              <div className="w-40 h-40 flex flex-col items-center justify-center border-4 border-dashed border-amber-300 rounded-full bg-amber-50">
+                
+              </div>
+            )}
+            {currentEvent && (
+              <p className="mt-3 text-sm text-amber-700 font-medium">
+                Region: <span className="capitalize">{currentEventRegion}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Discard Pile */}
+          <div className="text-center">
+            <h3 className="font-bold text-amber-700 mb-3">Discard Pile</h3>
+            <div className="relative">
+              {/* Discard stack effect */}
+              <div className="absolute -bottom-2 -right-2 w-40 h-40 rounded-full border-2 border-amber-300 bg-amber-100 opacity-60"></div>
+              <div className="absolute -bottom-1 -right-1 w-40 h-40 rounded-full border-2 border-amber-400 bg-amber-200 opacity-80"></div>
+              
+              {/* Top discard */}
+              <img 
+                src={blank_img} 
+                alt="Discard pile"
+                className="w-40 h-40 rounded-full border-4 border-amber-500 opacity-75 relative z-10"
+              />
+              
+              {/* Discard count badge */}
+              <div className="absolute -top-2 -right-2 bg-amber-500 text-white rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold shadow-md z-20">
+                {gameState.discardedEvents.length}
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-amber-700 font-medium">
+              Discarded: {gameState.discardedEvents.length}
+            </p>
+          </div>
+        </div>
+
+        {/* Event progress bar */}
         {gameState.eventsRemaining > 0 && (
-          <p className="text-blue-600 font-semibold">
-            Events remaining: {gameState.eventsRemaining}
-          </p>
+          <div className="mt-6 max-w-md mx-auto">
+            <div className="flex justify-between text-sm text-amber-700 mb-1">
+              <span>Events Progress</span>
+              <span>{gameState.eventsRemaining} remaining</span>
+            </div>
+            <div className="w-full bg-amber-200 rounded-full h-2">
+              <div 
+                className="bg-amber-600 h-2 rounded-full transition-all duration-500"
+                style={{ 
+                  width: `${((gameState.storm.currentRoll?.value || 1) - gameState.eventsRemaining) / (gameState.storm.currentRoll?.value || 1) * 100}%` 
+                }}
+              ></div>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Storm Die Display with Animation */}
+
+      {/* Controls */}
+      <div className="mb-4 space-x-2">
+        <button 
+          onClick={startEventPhaseWithStorm}
+          disabled={isStartEventPhaseDisabled}
+          className="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
+        >
+          Start Event Phase (Roll Storm Die)
+        </button>
+        
+        <button 
+          onClick={drawNextEvent}
+          disabled={isDrawNextEventDisabled}
+          className="bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
+        >
+          Next Event
+        </button>
+        
+        <button 
+          onClick={rollStormDie}
+          disabled={gameState.storm.isRolling === true}
+          className="bg-cyan-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
+        >
+          Roll Storm Die Only
+        </button>
+        
+        <button 
+          onClick={resetGame}
+          className="bg-red-500 text-white px-4 py-2 rounded"
+        >
+          Reset Game
+        </button>
+      </div>
+
+      {/* Storm Die Display  */}
       {((gameState.storm.isRolling || gameState.storm.currentRoll)) && (
         <div className="mb-4 p-4 border-2 border-blue-400 bg-blue-50 rounded-lg shadow-sm">
           <h3 className="text-lg font-bold text-blue-800 mb-2">
@@ -130,40 +298,6 @@ function App() {
         </div>
       )}
       
-      {/* Controls */}
-      <div className="mb-4 space-x-2">
-        <button 
-          onClick={startEventPhaseWithStorm}
-          disabled={isStartEventPhaseDisabled}
-          className="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
-        >
-          Start Event Phase (Roll Storm Die)
-        </button>
-        
-        <button 
-          onClick={drawNextEvent}
-          disabled={isDrawNextEventDisabled}
-          className="bg-green-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
-        >
-          Next Event
-        </button>
-        
-        <button 
-          onClick={rollStormDie}
-          disabled={gameState.storm.isRolling === true}
-          className="bg-cyan-500 text-white px-4 py-2 rounded disabled:bg-gray-400"
-        >
-          Roll Storm Die Only
-        </button>
-        
-        <button 
-          onClick={resetGame}
-          className="bg-red-500 text-white px-4 py-2 rounded"
-        >
-          Reset Game
-        </button>
-      </div>
-
       {/* Event Display */}
       {currentEvent && (
         <div className={`mb-4 p-4 border-2 rounded ${getEventColor(currentEvent.type)}`}>
@@ -283,27 +417,6 @@ function App() {
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="mt-6">
-        <h3 className="font-bold mb-2">Order Connections</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-          {Object.values(gameState.orders).map(order => (
-            <div key={order.id} className={`p-2 border rounded ${order.open ? 'bg-green-50' : 'bg-red-50'}`}>
-              <div className="flex justify-between">
-                <span className="font-medium">Order {order.id}</span>
-                <span className={order.open ? 'text-green-600' : 'text-red-600'}>
-                  {order.open ? 'OPEN' : 'CLOSED'}
-                </span>
-              </div>
-              <div className="text-xs text-gray-600">
-                <div>Region: {order.region}</div>
-                <div>North Priority: {order.northPriority}</div>
-                <div>Neighbors: {order.neighbors.join(', ')}</div>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Debug Info */}
