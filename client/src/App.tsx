@@ -88,7 +88,7 @@ function App() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden">
         {/* Left Panel - Map (Always visible) */}
-        <div className="flex-1 bg-white rounded-xl shadow-lg border-2 border-amber-200 overflow-hidden">
+        <div className="flex-1 bg-white rounded-xl shadow-lg border-2 border-amber-200 overflow-hidden min-h-[300px]">
           <MapView 
             selectedRegion={selectedRegion}
             onRegionSelect={setSelectedRegion}

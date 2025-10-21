@@ -17,6 +17,7 @@ interface GameStore {
   completeEvent: () => void;
   updateRegion: (regionId: string, updates: Partial<Region>) => void;
   updateOrder: (orderId: string, updates: Partial<Order>) => void;
+  updateOrders: (updates: Record<string, Partial<Order>>) => void;
   changePhase: (phase: GameState['phase']) => void;
   resetGame: () => void;
   
@@ -684,6 +685,27 @@ export const useGameStore = create<GameStore>()(
       updateOrder: (orderId: string, updates: Partial<Order>) => {
         console.log(`Would update order ${orderId} with:`, updates);
         return get();
+      },
+      updateOrders: (updates: Record<string, Partial<Order>>) => {
+        set((state) => {
+          const updatedOrders = { ...state.gameState.orders };
+          
+          Object.entries(updates).forEach(([orderId, orderUpdates]) => {
+            if (updatedOrders[orderId]) {
+              updatedOrders[orderId] = {
+                ...updatedOrders[orderId],
+                ...orderUpdates
+              };
+            }
+          });
+
+          return {
+            gameState: {
+              ...state.gameState,
+              orders: updatedOrders
+            }
+          };
+        });
       },
 
       changePhase: (phase: GameState['phase']) => {

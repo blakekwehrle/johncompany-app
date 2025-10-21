@@ -1,8 +1,9 @@
+// components/phases/CompanyPhase.tsx
 import React from 'react';
 import { useGameStore } from '../../store';
 
 const CompanyPhase: React.FC = () => {
-  const { gameState, updateRegion, updateOrder } = useGameStore();
+  const { gameState, resetAllOrders, setAllOrdersOpen } = useGameStore();
 
   return (
     <div className="h-full">
@@ -10,42 +11,49 @@ const CompanyPhase: React.FC = () => {
       
       <div className="space-y-4">
         <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-          <h3 className="font-bold text-green-700 mb-2">Quick Actions (unfinished)</h3>
+          <h3 className="font-bold text-green-700 mb-2">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-2">
-            <button className="bg-white p-2 rounded border text-sm hover:bg-green-100 transition-colors">
+            <button 
+              onClick={setAllOrdersOpen}
+              className="bg-white p-2 rounded border text-sm hover:bg-green-100 transition-colors"
+            >
               Open All Orders
             </button>
-            <button className="bg-white p-2 rounded border text-sm hover:bg-green-100 transition-colors">
-              Reset Unrest
+            <button 
+              onClick={resetAllOrders}
+              className="bg-white p-2 rounded border text-sm hover:bg-green-100 transition-colors"
+            >
+              Reset Orders
             </button>
           </div>
         </div>
 
         <div className="bg-white p-3 rounded-lg border">
-          <h3 className="font-bold mb-2">Region Status</h3>
-          <div className="space-y-2 max-h-40 overflow-y-auto">
-            {Object.values(gameState.regions).map(region => (
-              <div key={region.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <span className="font-medium capitalize">{region.name}</span>
-                <div className="flex gap-2">
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    region.companyControlled ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {region.companyControlled ? 'Company' : 'Local'}
-                  </span>
-                  {region.unrest > 0 && (
-                    <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">
-                      Unrest: {region.unrest}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+          <h3 className="font-bold mb-2">Instructions</h3>
+          <div className="space-y-2 text-sm text-gray-600">
+            <p><strong>Tap any region on the map</strong> to view details and manage orders</p>
+            <p>Toggle Company Control in the region detail view</p>
+            <p>Open/Close individual orders to control trade routes</p>
+            <p>Adjust unrest levels as needed</p>
           </div>
         </div>
 
-        <div className="text-sm text-gray-600 text-center">
-          <p>💡 Click on regions in the map to toggle control and view details</p>
+        <div className="bg-white p-3 rounded-lg border">
+          <h3 className="font-bold mb-2">Current Status</h3>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="text-center p-2 bg-blue-50 rounded">
+              <div className="font-bold text-blue-700">
+                {Object.values(gameState.regions).filter(r => r.companyControlled).length}
+              </div>
+              <div className="text-blue-600">Company Regions</div>
+            </div>
+            <div className="text-center p-2 bg-green-50 rounded">
+              <div className="font-bold text-green-700">
+                {Object.values(gameState.orders).filter(o => o.open).length}
+              </div>
+              <div className="text-green-600">Open Orders</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
