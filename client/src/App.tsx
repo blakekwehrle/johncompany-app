@@ -14,7 +14,7 @@ type AppPhase = 'event' | 'company' | 'analysis';
 
 function App() {
   const { gameState, resetGame } = useGameStore();
-  const [currentPhase, setCurrentPhase] = useState<AppPhase>('event');
+  const currentPhase = gameState.phase;
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
 
   // Navigation between phases
@@ -32,11 +32,11 @@ function App() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 to-amber-50 flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-blue-50 to-rose-50 flex flex-col">
       {/* Header */}
-      <header className="bg-amber-800 text-white p-4 shadow-lg">
+      <header className="bg-rose-800 text-white p-4 shadow-lg">
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">John Company Companion</h1>
+          <h1 className="text-xl font-bold">John Company: Events in India Companion</h1>
           <div className="flex items-center gap-4">
             <div className="text-sm">
               <span>Turn {gameState.turn} • {gameState.year}</span>
@@ -50,45 +50,29 @@ function App() {
           </div>
         </div>
         
-        {/* Phase Navigation */}
+        {/* Phase Navigation - Display only, not interactive */}
         <nav className="flex justify-center space-x-4 mt-2">
-          <button
-            onClick={() => setCurrentPhase('event')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              currentPhase === 'event' 
-                ? 'bg-white text-amber-800 shadow-md' 
-                : 'bg-amber-700 text-amber-100'
-            }`}
-          >
-             Event Phase
-          </button>
-          <button
-            onClick={() => setCurrentPhase('company')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              currentPhase === 'company' 
-                ? 'bg-white text-amber-800 shadow-md' 
-                : 'bg-amber-700 text-amber-100'
-            }`}
-          >
+          <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+            gameState.phase === 'event' 
+              ? 'bg-white text-rose-800 shadow-md' 
+              : 'bg-rose-700 text-rose-100 opacity-70'
+          }`}>
+            Event Phase
+          </div>
+          <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+            gameState.phase === 'company' 
+              ? 'bg-white text-rose-800 shadow-md' 
+              : 'bg-rose-700 text-rose-100 opacity-70'
+          }`}>
             Company Phase
-          </button>
-          <button
-            onClick={() => setCurrentPhase('analysis')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              currentPhase === 'analysis' 
-                ? 'bg-white text-amber-800 shadow-md' 
-                : 'bg-amber-700 text-amber-100'
-            }`}
-          >
-             Analysis
-          </button>
+          </div>
         </nav>
       </header>
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden">
         {/* Left Panel - Map (Always visible) */}
-        <div className="flex-1 bg-white rounded-xl shadow-lg border-2 border-amber-200 overflow-hidden min-h-[300px]">
+        <div className="flex-1 bg-white rounded-xl overflow-hidden min-h-[300px]">
           <MapView 
             selectedRegion={selectedRegion}
             onRegionSelect={setSelectedRegion}
@@ -97,8 +81,9 @@ function App() {
         </div>
 
         {/* Right Panel - Phase-specific content */}
-        <div className="w-full md:w-96 flex flex-col gap-4">
+        <div className="w-full md:w-96 flex flex-col gap-2">
           {/* Storm Die and Event Deck - Always visible during event phase, minimized otherwise */}
+          {currentPhase === 'event' && (
           <div className={`bg-white rounded-xl shadow-lg border-2 border-blue-200 p-4 transition-all ${
             currentPhase === 'event' ? 'flex-1' : 'h-32'
           }`}>
@@ -116,20 +101,19 @@ function App() {
               </div>
             )}
           </div>
-
+          )}
           {/* Phase-specific controls */}
-          <div className="flex-1 bg-white rounded-xl shadow-lg border-2 border-amber-200 p-4">
+          <div className="flex-1 bg-white rounded-xl shadow-lg border-2 border-blue-200 p-4">
             {renderPhaseContent()}
           </div>
         </div>
       </main>
 
       {/* Quick Stats Footer */}
-      <footer className="bg-amber-900 text-amber-100 p-2 text-sm">
+      <footer className="bg-rose-900 text-amber-100 p-2 text-sm">
         <div className="flex justify-between items-center">
           <span>Deck: {gameState.eventDeck.length} • Discard: {gameState.discardedEvents.length}</span>
           <span>Events Remaining: {gameState.eventsRemaining}</span>
-          <span>Unrest: {Object.values(gameState.regions).reduce((sum, r) => sum + r.unrest, 0)}</span>
         </div>
       </footer>
     </div>

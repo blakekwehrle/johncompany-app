@@ -1,18 +1,25 @@
-// components/phases/EventPhase.tsx
+// In src/components/phases/EventPhase.tsx
 import React from 'react';
 import { useGameStore } from '../../store';
 import { getEventDefinition } from '../../types/events';
 
 const EventPhase: React.FC = () => {
-  const { gameState, getCurrentEvent, getCurrentEventRegion } = useGameStore();
+  const { 
+    gameState, 
+    getCurrentEvent, 
+    getCurrentEventRegion, 
+    completeEventPhase, 
+    canCompleteEventPhase 
+  } = useGameStore();
+  
   const currentEvent = getCurrentEvent();
   const currentEventRegion = getCurrentEventRegion();
+  const canComplete = canCompleteEventPhase();
 
   // Show different states based on what's happening
   if (!gameState.storm.currentRoll && gameState.eventsRemaining === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-500">
-        <div className="text-4xl mb-4">⚡</div>
         <p className="text-center font-medium">Ready for Event Phase</p>
         <p className="text-sm mt-2 text-center">
           Roll the storm die to start events
@@ -24,8 +31,7 @@ const EventPhase: React.FC = () => {
   if (gameState.storm.currentRoll && !currentEvent && gameState.eventsRemaining > 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-blue-600">
-        <div className="text-4xl mb-4"></div>
-        <p className="text-center font-medium"></p>
+        <p className="text-center font-medium">Ready for Next Event</p>
         <p className="text-sm mt-2 text-center">
           {gameState.eventsRemaining} event{gameState.eventsRemaining > 1 ? 's' : ''} remaining
         </p>
@@ -36,14 +42,24 @@ const EventPhase: React.FC = () => {
     );
   }
 
+  if (canComplete) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center">
+        <p className="text-center text-black-600 font-medium mb-1">Events in India Concluded</p>
+        <button
+          onClick={completeEventPhase}
+          className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors font-medium"
+        >
+          Continue to Company Phase
+        </button>
+      </div>
+    );
+  }
+
   if (!currentEvent) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-500">
-        <div className="text-4xl mb-4">✅</div>
-        <p className="text-center">Event phase complete</p>
-        <p className="text-sm mt-2 text-center">
-          Switch to Company Phase to continue
-        </p>
+        <p className="text-center">Processing events...</p>
       </div>
     );
   }
@@ -59,32 +75,31 @@ const EventPhase: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-sm">
-            
-          <div className="bg-white p-2 ">
+          <div className="bg-white p-2">
             <span className="font-medium">Region: </span>
-            
             <span className="text-blue-700 font-bold capitalize">{currentEventRegion}</span>
             <br />
             {currentEvent.strength && (
-                <div>
-            <span className="font-medium">Strength: </span>
-            
-            <span className="text-red-600 font-bold">{currentEvent.strength}</span>
-            </div>
-           )}
+              <div>
+                <span className="font-medium">Strength: </span>
+                <span className="text-red-600 font-bold">{currentEvent.strength}</span>
+              </div>
+            )}
           </div>
-          <div className="relative ">
-                <img 
-                src={currentEvent.image} 
-                alt={currentEvent.title}
-                className="w-32 h-32 rounded-full border-2 border-yellow-500"
-                />
-            </div>
+          <div className="relative flex justify-center">
+            <img 
+              src={currentEvent.image} 
+              alt={currentEvent.title}
+              className="w-24 h-24 rounded-lg border-2 border-yellow-500"
+            />
+          </div>
         </div>
-        {
-            
-        }
         
+        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+          <p className="text-sm text-yellow-700 text-center">
+            Event Phase - Map is view-only
+          </p>
+        </div>
       </div>
     </div>
   );

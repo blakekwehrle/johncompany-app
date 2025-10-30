@@ -18,6 +18,7 @@ export interface GameState {
   
   stormDie?: 'east' | 'west' | 'south' | 'none';
   crisisType?: 'rebellion' | 'invasion' | 'attack_on_company';
+  eventPhaseComplete: boolean;
 }
 
 export interface Region {

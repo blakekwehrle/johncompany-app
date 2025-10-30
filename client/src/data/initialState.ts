@@ -346,4 +346,5 @@ export const initialState: GameState = {
   crisisType: undefined,
   storm: stormDie,
   eventsRemaining: 0,
+  eventPhaseComplete: false, 
 };

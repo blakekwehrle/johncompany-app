@@ -62,6 +62,12 @@ interface GameStore {
   getNextEventRegion: () => string | null;
   getRegion: (regionId: string) => Region | undefined;
   getRegionOrders: (regionId: string) => Order[];
+
+  // Phase management
+  canCompleteEventPhase: () => boolean;
+  completeEventPhase: () => void;
+  startCompanyPhase: () => void;
+  isEventPhaseComplete: () => boolean;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -74,10 +80,16 @@ export const useGameStore = create<GameStore>()(
         set((state) => ({
           gameState: {
             ...state.gameState,
-            phase: 'event'
+            phase: 'event',
+            eventPhaseComplete: false,
+            eventsRemaining: state.gameState.storm.currentRoll?.value || 0
           }
         }));
-        get().drawEvent();
+      },
+
+      canCompleteEventPhase: () => {
+        const state = get();
+        return state.gameState.eventsRemaining === 0 && !state.gameState.currentEventId;
       },
 
       drawEvent: () => {
@@ -146,7 +158,7 @@ export const useGameStore = create<GameStore>()(
           console.error('Cannot resolve event: no current event or region');
           return;
         }
-
+        
         console.log(`Resolving event: ${currentEvent.id} in region: ${currentRegion}`);
         
         try {
@@ -159,7 +171,7 @@ export const useGameStore = create<GameStore>()(
               ...newGameState,
               currentEventId: undefined,
               currentEventRegion: undefined,
-              phase: 'company',
+              phase: 'event',
               turn: state.gameState.turn + 1
             }
           });
@@ -171,7 +183,7 @@ export const useGameStore = create<GameStore>()(
               ...state.gameState,
               currentEventId: undefined,
               currentEventRegion: undefined,
-              phase: 'company'
+              phase: 'event'
             }
           }));
         }
@@ -741,7 +753,33 @@ export const useGameStore = create<GameStore>()(
         }));
 
         get().drawEvent();
-      }
+      },
+      // In the store implementation, add these actions:
+      completeEventPhase: () => {
+        console.log("trying to finish event phase");
+        set((state) => ({
+          gameState: {
+            ...state.gameState,
+            phase: 'company',
+            eventPhaseComplete: true
+          }
+        }));
+      },
+
+
+      startCompanyPhase: () => {
+        set((state) => ({
+          gameState: {
+            ...state.gameState,
+            phase: 'company'
+          }
+        }));
+      },
+
+      isEventPhaseComplete: () => {
+        const state = get();
+        return state.gameState.eventsRemaining <= 0 && !state.gameState.currentEventId;
+      },
     }),
     {
       name: 'joco-game-storage',

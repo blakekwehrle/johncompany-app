@@ -101,7 +101,8 @@ const GanjifaDeck: React.FC = () => {
           </button>
         )}
       </div>
-      {/* Current Event Info */}
+      {/* Current Event Info 
+      
       {currentEvent && (
         <div className="mt-3 p-2 bg-amber-100 rounded-lg border border-amber-300">
           <h4 className="font-bold text-sm">{currentEvent.title}</h4>
@@ -112,10 +113,12 @@ const GanjifaDeck: React.FC = () => {
         </div>
       )}
 
-      {/* Deck Status */}
       <div className="mt-2 text-xs text-amber-600">
         <p>Deck: {gameState.eventDeck.length} • Discard: {gameState.discardedEvents.length}</p>
       </div>
+
+      */}
+      
     </div>
   );
 };
