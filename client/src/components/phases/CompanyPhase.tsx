@@ -1,8 +1,11 @@
 // In src/components/phases/CompanyPhase.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { useGameStore } from '../../store';
+interface CompanyPhaseProps {
+  selectedRegion: string | null;
+}
 
-const CompanyPhase: React.FC = () => {
+const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
   const { 
     gameState, 
     resetAllOrders, 
@@ -11,8 +14,6 @@ const CompanyPhase: React.FC = () => {
     updateRegion,
     updateOrder,
   } = useGameStore();
-  
-  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
 
   const handleReturnToEventPhase = () => {
     startEventPhase();
@@ -20,12 +21,20 @@ const CompanyPhase: React.FC = () => {
 
   const selectedRegionData = selectedRegion ? gameState.regions[selectedRegion] : null;
 
-  // Safe update functions with proper type checking
   const handleToggleCompanyControl = () => {
-    if (!selectedRegion) return;
-    updateRegion(selectedRegion, { 
-      companyControlled: !selectedRegionData!.companyControlled 
-    });
+    if (!selectedRegion || !selectedRegionData) return;
+    if (!selectedRegionData.companyControlled) {
+        updateRegion(selectedRegion, { 
+        companyControlled: !selectedRegionData.companyControlled,
+        towerHeight: 0
+      });
+    }
+    else {
+      updateRegion(selectedRegion, { 
+        companyControlled: !selectedRegionData.companyControlled,
+        towerHeight: 1
+      });
+    }
   };
 
   const handleDecreaseUnrest = () => {
@@ -62,12 +71,12 @@ const CompanyPhase: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      <h2 className="text-lg font-bold mb-3 text-green-800">Company Phase</h2>
+      <h2 className="text-lg font-bold mb-3 text-green-800">Company Operations</h2>
       
       <div className="flex-1 space-y-4 overflow-y-auto">
         {/* Phase Controls */}
         <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-          {/* <h3 className="font-bold text-green-700 mb-2">Phase Controls</h3> */}
+          <h3 className="font-bold text-green-700 mb-2">Phase Controls</h3>
           <div className="space-y-2">
             <button 
               onClick={handleReturnToEventPhase}
@@ -76,49 +85,23 @@ const CompanyPhase: React.FC = () => {
               Return to Event Phase
             </button>
             <div className="grid grid-cols-2 gap-2">
-              {/* <button 
-                onClick={setAllOrdersOpen}
-                className="bg-white p-2 rounded border text-sm hover:bg-green-100 transition-colors"
-              >
-                Open All Orders
-              </button>
-              <button 
-                onClick={resetAllOrders}
-                className="bg-white p-2 rounded border text-sm hover:bg-green-100 transition-colors"
-              >
-                Reset Orders
-              </button> */}
             </div>
           </div>
         </div>
 
-        {/* Region Selection */}
+        {/* Region Selection Status */}
+        {!selectedRegionData && (
         <div className="bg-white p-3 rounded-lg border">
-          <h3 className="font-bold mb-2">Select Region to Edit</h3>
-          <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
-            {Object.values(gameState.regions).map(region => (
-              <button
-                key={region.id}
-                onClick={() => setSelectedRegion(region.id)}
-                className={`p-2 rounded text-sm text-left transition-colors ${
-                  selectedRegion === region.id 
-                    ? 'bg-blue-100 border border-blue-300' 
-                    : 'bg-gray-50 hover:bg-gray-100 border'
-                }`}
-              >
-                <div className="font-medium capitalize">{region.name}</div>
-                <div className="text-xs text-gray-600">
-                  Orders: {region.orders.filter(orderId => gameState.orders[orderId]?.open).length}/{region.orders.length}
-                </div>
-              </button>
-            ))}
+          <h3 className="font-bold mb-2">Region Selection</h3>
+          <div className="text-sm text-gray-600">
+            <p className="text-gray-500 italic">Click on any region to edit its properties</p>
           </div>
-        </div> 
-
-        {/* Region Controls - This section only renders when selectedRegionData exists */}
-        {selectedRegionData && selectedRegion && (
+        </div>
+        )}
+        {/* Region Controls */}
+        {selectedRegionData && (
           <div className="bg-white p-3 rounded-lg border">
-            <h3 className="font-bold mb-3 text-gray-800 capitalize">{selectedRegionData.name} Controls</h3>
+            <h3 className="font-bold mb-3 text-gray-800 capitalize">{selectedRegionData.name}:</h3>
             
             {/* Company Control Toggle */}
             <div className="flex justify-between items-center mb-4 p-2 bg-gray-50 rounded">
@@ -208,7 +191,7 @@ const CompanyPhase: React.FC = () => {
         )}
 
         {/* Current Status */}
-        <div className="bg-white p-3 rounded-lg border">
+        {/* <div className="bg-white p-3 rounded-lg border">
           <h3 className="font-bold mb-2">Current Status</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="text-center p-2 bg-blue-50 rounded">
@@ -224,7 +207,7 @@ const CompanyPhase: React.FC = () => {
               <div className="text-green-600">Open Orders</div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

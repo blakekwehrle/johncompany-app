@@ -693,11 +693,29 @@ export const useGameStore = create<GameStore>()(
           };
         });
       },
-
       updateOrder: (orderId: string, updates: Partial<Order>) => {
-        console.log(`Would update order ${orderId} with:`, updates);
-        return get();
+        set((state) => {
+          const order = state.gameState.orders[orderId];
+          if (!order) {
+            console.error(`Order ${orderId} not found!`);
+            return state;
+          }
+
+          return {
+            gameState: {
+              ...state.gameState,
+              orders: {
+                ...state.gameState.orders,
+                [orderId]: {
+                  ...order,
+                  ...updates
+                }
+              }
+            }
+          };
+        });
       },
+
       updateOrders: (updates: Record<string, Partial<Order>>) => {
         set((state) => {
           const updatedOrders = { ...state.gameState.orders };
@@ -771,7 +789,7 @@ export const useGameStore = create<GameStore>()(
         set((state) => ({
           gameState: {
             ...state.gameState,
-            phase: 'company'
+            phase: 'company',
           }
         }));
       },

@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import { useGameStore } from './store';
 import { REGION_IDS } from './data/initialState';
 
-// Components we'll create
 import MapView from './components/map/MapView';
 import EventPhase from './components/phases/EventPhase';
 import CompanyPhase from './components/phases/CompanyPhase';
-import AnalysisPhase from './components/phases/AnalysisPhase';
 import StormDie from './components/events/StormDie';
 import GanjifaDeck from './components/events/GanjifaDeck';
-
-type AppPhase = 'event' | 'company' | 'analysis';
+import AnalysisPhase from './components/phases/AnalysisPhase';
 
 function App() {
   const { gameState, resetGame } = useGameStore();
@@ -23,20 +20,19 @@ function App() {
       case 'event':
         return <EventPhase />;
       case 'company':
-        return <CompanyPhase />;
+        return <CompanyPhase selectedRegion={selectedRegion} />;
       case 'analysis':
         return <AnalysisPhase />;
       default:
         return <EventPhase />;
     }
   };
-
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 to-rose-50 flex flex-col">
       {/* Header */}
-      <header className="bg-rose-800 text-white p-4 shadow-lg">
-        <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">John Company: Events in India Companion</h1>
+      <header className="bg-rose-800 text-white p-2 shadow-lg">
+        <div className="hidden sm:flex justify-between items-center">
+          <h1 className="text-xl font-bold mb-2">John Company: Events in India Companion</h1>
           <div className="flex items-center gap-4">
             <div className="text-sm">
               <span>Turn {gameState.turn} • {gameState.year}</span>
@@ -50,8 +46,8 @@ function App() {
           </div>
         </div>
         
-        {/* Phase Navigation - Display only, not interactive */}
-        <nav className="flex justify-center space-x-4 mt-2">
+        {/* Phase Navigation - Display only */}
+        <nav className="flex justify-center space-x-4">
           <div className={`px-4 py-2 rounded-full text-sm font-medium ${
             gameState.phase === 'event' 
               ? 'bg-white text-rose-800 shadow-md' 
@@ -72,7 +68,7 @@ function App() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden">
         {/* Left Panel - Map (Always visible) */}
-        <div className="flex-1 bg-white rounded-xl overflow-hidden min-h-[300px]">
+        <div className="flex-1 bg-white rounded-xl shadow-lg border-2 border-rose-200 overflow-hidden min-h-[300px]">
           <MapView 
             selectedRegion={selectedRegion}
             onRegionSelect={setSelectedRegion}
