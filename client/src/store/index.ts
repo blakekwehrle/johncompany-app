@@ -81,8 +81,13 @@ export const useGameStore = create<GameStore>()(
           gameState: {
             ...state.gameState,
             phase: 'event',
+            eventsRemaining: 0,
             eventPhaseComplete: false,
-            eventsRemaining: state.gameState.storm.currentRoll?.value || 0
+            storm: {
+              ...state.gameState.storm,
+              isRolling: false,
+              currentRoll: undefined
+            }
           }
         }));
       },

@@ -6,7 +6,7 @@ const StormDie: React.FC = () => {
   const { gameState, rollStormDie, startEventPhaseWithStorm } = useGameStore();
 
   // Determine if we can start the event phase
-  const canStartEventPhase = gameState.eventsRemaining === 0;
+  const canStartEventPhase = !gameState.eventPhaseComplete && !gameState.storm.currentRoll;
 
   return (
     <div className="text-center">

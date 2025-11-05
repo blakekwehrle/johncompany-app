@@ -397,14 +397,14 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
         </div>
         
         <div className="flex-1 flex flex-col lg:flex-row gap-6">
-          {/* Zoomed Region View */}
-          <div className="flex-1 bg-white rounded-lg border-2 border-rose-200 p-4 flex items-center justify-center">
+          {/* Zoomed Region View -Currently Unused-*/}
+          {/* <div className="flex-1 bg-white rounded-lg border-2 border-rose-200 p-4 flex items-center justify-center">
             <img 
               src={detailedRegionImages[selectedRegion]} 
               alt={`Detailed ${region.name} map`}
               className="max-w-full max-h-full object-contain"
             />
-          </div>
+          </div> */}
           
           {/* Region Controls */}
           {currentPhase === 'company' && (
