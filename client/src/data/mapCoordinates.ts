@@ -15,6 +15,10 @@ export interface TowerPosition extends MapPosition {
   regionId: string;
 }
 
+export interface UnrestPosition extends MapPosition {
+  regionId: string;
+}
+
 // Order positions for each region (approximate positions - you'll need to adjust these)
 export const orderPositions: Record<string, OrderPosition[]> = {
   [REGION_IDS.PUNJAB]: [
@@ -54,12 +58,22 @@ export const orderPositions: Record<string, OrderPosition[]> = {
 
 // Tower positions for each region (center of each region)
 export const towerPositions: Record<string, TowerPosition> = {
-  [REGION_IDS.PUNJAB]: { regionId: REGION_IDS.PUNJAB, x: 10.6, y: 9.68 },
-  [REGION_IDS.DELHI]: { regionId: REGION_IDS.DELHI, x: 59.2, y: 7.2 },
-  [REGION_IDS.BENGAL]: { regionId: REGION_IDS.BENGAL, x: 80.7, y: 21.6 },
-  [REGION_IDS.BOMBAY]: { regionId: REGION_IDS.BOMBAY, x: 24.9, y: 52.6 },
-  [REGION_IDS.MARATHA]: { regionId: REGION_IDS.MARATHA, x: 46, y: 22.5 },
-  [REGION_IDS.HYDERABAD]: { regionId: REGION_IDS.HYDERABAD, x: 37.8, y: 55 },
-  [REGION_IDS.MYSORE]: { regionId: REGION_IDS.MYSORE, x: 29.65, y: 75.3 },
-  [REGION_IDS.MADRAS]: { regionId: REGION_IDS.MADRAS, x: 47.35, y: 88.2 }
+  [REGION_IDS.PUNJAB]: { regionId: REGION_IDS.PUNJAB, x: 10.3, y: 9.38 },
+  [REGION_IDS.DELHI]: { regionId: REGION_IDS.DELHI, x: 58.9, y: 7.1 },
+  [REGION_IDS.BENGAL]: { regionId: REGION_IDS.BENGAL, x: 81.2, y: 22.1 },
+  [REGION_IDS.BOMBAY]: { regionId: REGION_IDS.BOMBAY, x: 25.19, y: 53 },
+  [REGION_IDS.MARATHA]: { regionId: REGION_IDS.MARATHA, x: 45.7, y: 22.1 },
+  [REGION_IDS.HYDERABAD]: { regionId: REGION_IDS.HYDERABAD, x: 37.5, y: 54.72 },
+  [REGION_IDS.MYSORE]: { regionId: REGION_IDS.MYSORE, x: 29.41, y: 75.03 },
+  [REGION_IDS.MADRAS]: { regionId: REGION_IDS.MADRAS, x: 47.75, y: 88.8 }
+};
+export const unrestPositions: Record<string, UnrestPosition> = {
+  [REGION_IDS.PUNJAB]: { regionId: REGION_IDS.PUNJAB, x: 17.3, y: 15.38 },
+  [REGION_IDS.DELHI]: { regionId: REGION_IDS.DELHI, x: 48.9, y: 7.1 },
+  [REGION_IDS.BENGAL]: { regionId: REGION_IDS.BENGAL, x: 74.2, y: 12.1 },
+  [REGION_IDS.BOMBAY]: { regionId: REGION_IDS.BOMBAY, x: 19.1, y: 29 },
+  [REGION_IDS.MARATHA]: { regionId: REGION_IDS.MARATHA, x: 55.7, y: 34.1 },
+  [REGION_IDS.HYDERABAD]: { regionId: REGION_IDS.HYDERABAD, x: 47.5, y: 48.72 },
+  [REGION_IDS.MYSORE]: { regionId: REGION_IDS.MYSORE, x: 39.41, y: 83.03 },
+  [REGION_IDS.MADRAS]: { regionId: REGION_IDS.MADRAS, x: 46.75, y: 67.8 }
 };

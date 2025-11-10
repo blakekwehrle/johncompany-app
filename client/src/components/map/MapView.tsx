@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useGameStore } from '../../store';
 import { REGION_IDS } from '../../data/initialState';
-import { orderPositions, towerPositions } from '../../data/mapCoordinates';
+import { orderPositions, towerPositions, unrestPositions } from '../../data/mapCoordinates';
 
 import baseMapImage from '../../assets/images/map/india_base.png';
 
@@ -26,6 +26,7 @@ import madrasRegion from '../../assets/images/map/regions/madras.png';
 import closedOrderImg from '../../assets/images/pieces/closed_order.png';
 import governorOverlayImg from '../../assets/images/pieces/governor_overlay.png';
 import towerSimpleImg from '../../assets/images/pieces/tower_simple.png';
+import unrestImg from '../../assets/images/pieces/unrest.png';
 import elephantImg from '../../assets/images/pieces/elephant.png';
 import flagImg from '../../assets/images/pieces/flag.png';
 import flagStarImg from '../../assets/images/pieces/flag_star.png';
@@ -213,6 +214,10 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
 
   // Reinitialize canvas when display rect changes
   useEffect(() => {
+    //temporarily unselecting region here.
+    if (currentPhase === 'event') {
+      onRegionSelect(null);
+    }
     if (displayRect.width > 0 && displayRect.height > 0) {
       initCanvas();
     }
@@ -361,9 +366,9 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
           <img 
             src={towerSimpleImg} 
             alt="Tower" 
-            className="w-10 h-10" 
+            className="w-9 h-9" 
           />
-          <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm pointer-events-none">
+          <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl pointer-events-none">
             {region.towerHeight}
           </div>
         </div>
@@ -386,21 +391,50 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
             key={`governor-${region.id}`}
             className="absolute"
             style={{
-              left: absolutePos.x - 15,
-              top: absolutePos.y - 15,
+              left: absolutePos.x - 20,
+              top: absolutePos.y - 20,
               zIndex: 20
             }}
           >
             <img 
               src={governorOverlayImg} 
               alt="Governor" 
-              className="w-8 h-8 opacity-70" 
+              className="w-9 h-9 opacity-70" 
             />
           </div>
         );
       });
   };
+  const renderUnrest = () => {
+    return Object.values(unrestPositions).map((UnrestPos) => {
+      const region = gameState.regions[UnrestPos.regionId];
+      if (!region || region.unrest === 0) return null;
 
+      const absolutePos = getAbsolutePosition(UnrestPos);
+      
+      return (
+        <div
+          key={`unrest-${UnrestPos.regionId}`}
+          className="absolute"
+          style={{
+            left: absolutePos.x - 20,
+            top: absolutePos.y - 20,
+            zIndex: 25
+          }}
+          title={`${region.name} Unrest: ${region.unrest}`}
+        >
+          <img 
+            src={unrestImg} 
+            alt="Unrest" 
+            className="w-7 h-7" 
+          />
+          <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl pointer-events-none">
+            {region.unrest}
+          </div>
+        </div>
+      );
+    });
+  };
   // Don't render detailed view anymore since we're handling everything on the main map
   if (isZoomed && selectedRegion) {
     return (
@@ -494,6 +528,8 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
       {/* Render Towers */}
       {renderTowers()}
 
+      {/* Render Unrest */}
+      {renderUnrest()}
       {/* Render Governor Overlays */}
       {renderGovernorOverlays()}
       

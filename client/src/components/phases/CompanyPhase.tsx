@@ -15,11 +15,11 @@ const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
     updateOrder,
   } = useGameStore();
 
+  const selectedRegionData = selectedRegion ? gameState.regions[selectedRegion] : null;
+
   const handleReturnToEventPhase = () => {
     startEventPhase();
   };
-
-  const selectedRegionData = selectedRegion ? gameState.regions[selectedRegion] : null;
 
   const handleToggleCompanyControl = () => {
     if (!selectedRegion || !selectedRegionData) return;
@@ -66,6 +66,7 @@ const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
   };
 
   const handleToggleOrder = (orderId: string, currentOpen: boolean) => {
+    console.log(selectedRegion);
     updateOrder(orderId, { open: !currentOpen });
   };
 
