@@ -346,35 +346,60 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
 
   // Render towers for all regions
   const renderTowers = () => {
-    return Object.values(towerPositions).map((towerPos) => {
-      const region = gameState.regions[towerPos.regionId];
-      if (!region || region.towerHeight === 0) return null;
+  return Object.values(towerPositions).map((towerPos) => {
+    const region = gameState.regions[towerPos.regionId];
+    if (!region || region.towerHeight === 0) return null;
 
-      const absolutePos = getAbsolutePosition(towerPos);
-      
-      return (
-        <div
-          key={`tower-${towerPos.regionId}`}
-          className="absolute"
-          style={{
-            left: absolutePos.x - 20,
-            top: absolutePos.y - 20,
-            zIndex: 25
-          }}
-          title={`${region.name} Tower - Height: ${region.towerHeight}`}
-        >
-          <img 
-            src={towerSimpleImg} 
-            alt="Tower" 
-            className="w-9 h-9" 
-          />
-          <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl pointer-events-none">
-            {region.towerHeight}
+    const absolutePos = getAbsolutePosition(towerPos);
+    
+    // Define flag configurations in an array
+    const flagConfigs = [
+      { condition: region.towerHasFlag, img: flagImg, alt: "Flag" },
+      { condition: region.towerHasFlagStar, img: flagStarImg, alt: "Star Flag" }
+    ];
+
+    return (
+      <div
+        key={`tower-${towerPos.regionId}`}
+        className="absolute"
+        style={{
+          left: absolutePos.x - 20,
+          top: absolutePos.y - 20,
+          zIndex: 25
+        }}
+        title={`${region.name} Tower - Height: ${region.towerHeight}`}
+      >
+        <div className="flex items-center">
+          {/* Tower with height */}
+          <div className="relative">
+            <img 
+              src={towerSimpleImg} 
+              alt="Tower" 
+              className="w-9 h-9" 
+            />
+            <div className="absolute inset-0 flex items-center justify-center text-white font-bold text-xl pointer-events-none">
+              {region.towerHeight}
+            </div>
+          </div>
+          
+          {/* Flags */}
+          <div>
+            {flagConfigs.map((flag, index) => 
+              flag.condition && (
+                <img 
+                  key={`flag-${index}`}
+                  src={flag.img} 
+                  alt={flag.alt} 
+                  className="w-6 h-6" 
+                />
+              )
+            )}
           </div>
         </div>
-      );
-    });
-  };
+      </div>
+    );
+  });
+};
 
   // Render governor overlays for company-controlled regions
   const renderGovernorOverlays = () => {
@@ -437,7 +462,6 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
   };
   const renderElephant = (regionIdFront: string, regionIdBack: string) => {
     const elephant = elephantPositions[regionIdFront+regionIdBack][0] || [];
-    console.log(elephant);
     if (!elephant) return null;
 
     const absolutePos = getAbsolutePosition(elephant);

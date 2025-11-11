@@ -27,6 +27,7 @@ export interface Region {
   unrest: number;
   towerHeight: number;
   towerHasFlag: boolean;
+  towerHasFlagStar: boolean;
   elephantFacing: boolean;
   elephantBackRegion: string | null; // Reference by ID
   companyControlled: boolean;

@@ -76,7 +76,6 @@ const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
   };
 
   const handleToggleOrder = (orderId: string, currentOpen: boolean) => {
-    console.log(selectedRegion);
     updateOrder(orderId, { open: !currentOpen });
   };
 
