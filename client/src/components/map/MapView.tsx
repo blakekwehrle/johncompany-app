@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useGameStore } from '../../store';
 import { REGION_IDS } from '../../data/initialState';
-import { orderPositions, towerPositions, unrestPositions } from '../../data/mapCoordinates';
+import { orderPositions, towerPositions, unrestPositions, elephantPositions } from '../../data/mapCoordinates';
 
 import baseMapImage from '../../assets/images/map/india_base.png';
 
@@ -303,7 +303,7 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
     }
     calculateDisplayRect();
   };
-
+  
   // Render orders for a specific region
   const renderOrders = (regionId: string) => {
     const regionOrders = orderPositions[regionId] || [];
@@ -435,6 +435,33 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
       );
     });
   };
+  const renderElephant = (regionIdFront: string, regionIdBack: string) => {
+    const elephant = elephantPositions[regionIdFront+regionIdBack][0] || [];
+    console.log(elephant);
+    if (!elephant) return null;
+
+    const absolutePos = getAbsolutePosition(elephant);
+    
+    return (
+      <div
+        key={`elephant-facing-${elephant.regionIdFront}-from-${elephant.regionIdBack}`}
+        className="absolute"
+        style={{
+          left: absolutePos.x - 20,
+          top: absolutePos.y - 20,
+          zIndex: 56
+        }}
+        title={`${elephant.regionIdFront} facing Elephant from ${elephant.regionIdBack}`}
+      >
+        <img 
+          src={elephantImg} 
+          alt="Elephant" 
+          className={`w-7 h-10 transform ${elephant.rotation}`} 
+        />
+      </div>
+    );
+  };
+  
   // Don't render detailed view anymore since we're handling everything on the main map
   if (isZoomed && selectedRegion) {
     return (
@@ -520,6 +547,9 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
         </div>
       )}
 
+      {/* Render Elephant */}
+      {renderElephant("bombay", "maratha")}
+
       {/* Render Orders */}
       {Object.keys(gameState.regions).map(regionId => 
         renderOrders(regionId)
@@ -530,6 +560,7 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
 
       {/* Render Unrest */}
       {renderUnrest()}
+
       {/* Render Governor Overlays */}
       {renderGovernorOverlays()}
       

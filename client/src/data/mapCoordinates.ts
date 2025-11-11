@@ -19,7 +19,12 @@ export interface UnrestPosition extends MapPosition {
   regionId: string;
 }
 
-// Order positions for each region (approximate positions - you'll need to adjust these)
+export interface ElephantPosition extends MapPosition {
+  regionIdFront: string;
+  regionIdBack: string;
+  rotation: string;
+}
+
 export const orderPositions: Record<string, OrderPosition[]> = {
   [REGION_IDS.PUNJAB]: [
     { orderId: '1', x: 20.5, y: 7.7 }
@@ -77,3 +82,84 @@ export const unrestPositions: Record<string, UnrestPosition> = {
   [REGION_IDS.MYSORE]: { regionId: REGION_IDS.MYSORE, x: 39.41, y: 83.03 },
   [REGION_IDS.MADRAS]: { regionId: REGION_IDS.MADRAS, x: 46.75, y: 67.8 }
 };
+
+export const elephantPositions:  Record<string, ElephantPosition[]> = {
+  [REGION_IDS.PUNJAB + REGION_IDS.BOMBAY]: [
+    {regionIdFront: REGION_IDS.PUNJAB, regionIdBack: REGION_IDS.BOMBAY, rotation: "rotate-[10deg]", x: 11.5, y: 17.7 }
+  ],
+  [REGION_IDS.BOMBAY + REGION_IDS.PUNJAB]: [
+    {regionIdFront: REGION_IDS.BOMBAY, regionIdBack: REGION_IDS.PUNJAB, rotation: "rotate-[160deg]", x: 12.5, y: 18.7 }
+  ],
+  [REGION_IDS.PUNJAB + REGION_IDS.DELHI]: [
+    {regionIdFront: REGION_IDS.PUNJAB, regionIdBack: REGION_IDS.DELHI, rotation: "-rotate-[80deg]", x: 27.5, y: 5.7 }
+  ],
+  [REGION_IDS.DELHI + REGION_IDS.PUNJAB]: [
+    {regionIdFront: REGION_IDS.DELHI, regionIdBack: REGION_IDS.PUNJAB, rotation: "rotate-[110deg]", x: 28.5, y: 5.7 }
+  ],
+  [REGION_IDS.DELHI + REGION_IDS.BOMBAY]: [
+    {regionIdFront: REGION_IDS.DELHI, regionIdBack: REGION_IDS.BOMBAY, rotation: "rotate-[30deg]", x: 30.5, y: 15.2 }
+  ],
+  [REGION_IDS.BOMBAY + REGION_IDS.DELHI]: [
+    {regionIdFront: REGION_IDS.BOMBAY, regionIdBack: REGION_IDS.DELHI, rotation: "rotate-[220deg]", x: 30.3, y: 15.7 }
+  ],
+  [REGION_IDS.BOMBAY + REGION_IDS.MARATHA]: [
+    {regionIdFront: REGION_IDS.BOMBAY, regionIdBack: REGION_IDS.MARATHA, rotation: "rotate-[95deg]", x: 33.2, y: 25.7 }
+  ],
+  [REGION_IDS.MARATHA + REGION_IDS.BOMBAY]: [
+    {regionIdFront: REGION_IDS.MARATHA, regionIdBack: REGION_IDS.BOMBAY, rotation: "rotate-[265deg]", x: 32.3, y: 24.9 }
+  ],
+  [REGION_IDS.BOMBAY + REGION_IDS.HYDERABAD]: [
+    {regionIdFront: REGION_IDS.BOMBAY, regionIdBack: REGION_IDS.HYDERABAD, rotation: "rotate-[110deg]", x: 31.8, y: 42.7 }
+  ],
+  [REGION_IDS.HYDERABAD + REGION_IDS.BOMBAY]: [
+    {regionIdFront: REGION_IDS.HYDERABAD, regionIdBack: REGION_IDS.BOMBAY, rotation: "rotate-[290deg]", x: 31.8, y: 41.7 }
+  ],
+  [REGION_IDS.BOMBAY + REGION_IDS.MYSORE]: [
+    {regionIdFront: REGION_IDS.BOMBAY, regionIdBack: REGION_IDS.MYSORE, rotation: "-rotate-[10deg]", x: 28.8, y: 59.7 }
+  ],
+  [REGION_IDS.MYSORE + REGION_IDS.BOMBAY]: [
+    {regionIdFront: REGION_IDS.MYSORE, regionIdBack: REGION_IDS.BOMBAY, rotation: "rotate-[160deg]", x: 28.8, y: 60.7 }
+  ],
+  [REGION_IDS.DELHI + REGION_IDS.MARATHA]: [
+    {regionIdFront: REGION_IDS.DELHI, regionIdBack: REGION_IDS.MARATHA, rotation: "rotate-[185deg]", x: 41.5, y: 17.2 }
+  ],
+  [REGION_IDS.MARATHA + REGION_IDS.DELHI]: [
+    {regionIdFront: REGION_IDS.MARATHA, regionIdBack: REGION_IDS.DELHI, rotation: "rotate-[10deg]", x: 41.4, y: 16.7 }
+  ],
+  [REGION_IDS.DELHI + REGION_IDS.BENGAL]: [
+    {regionIdFront: REGION_IDS.DELHI, regionIdBack: REGION_IDS.BENGAL, rotation: "rotate-[95deg]", x: 67, y: 11.2 }
+  ],
+  [REGION_IDS.BENGAL + REGION_IDS.DELHI]: [
+    {regionIdFront: REGION_IDS.BENGAL, regionIdBack: REGION_IDS.DELHI, rotation: "rotate-[275deg]", x: 65.9, y: 11.7 }
+  ],
+  [REGION_IDS.MARATHA + REGION_IDS.BENGAL]: [
+    {regionIdFront: REGION_IDS.MARATHA, regionIdBack: REGION_IDS.BENGAL, rotation: "rotate-[65deg]", x: 65, y: 29.2 }
+  ],
+  [REGION_IDS.BENGAL + REGION_IDS.MARATHA]: [
+    {regionIdFront: REGION_IDS.BENGAL, regionIdBack: REGION_IDS.MARATHA, rotation: "rotate-[240deg]", x: 64.9, y: 29 }
+  ],
+  [REGION_IDS.MARATHA + REGION_IDS.HYDERABAD]: [
+    {regionIdFront: REGION_IDS.MARATHA, regionIdBack: REGION_IDS.HYDERABAD, rotation: "rotate-[195deg]", x: 41, y: 42.2 }
+  ],
+  [REGION_IDS.HYDERABAD + REGION_IDS.MARATHA]: [
+    {regionIdFront: REGION_IDS.HYDERABAD, regionIdBack: REGION_IDS.MARATHA, rotation: "rotate-[25deg]", x: 41, y: 41.5 }
+  ],
+  [REGION_IDS.HYDERABAD + REGION_IDS.MYSORE]: [
+    {regionIdFront: REGION_IDS.HYDERABAD, regionIdBack: REGION_IDS.MYSORE, rotation: "rotate-[215deg]", x: 38.2, y: 60.8 }
+  ],  
+  [REGION_IDS.MYSORE + REGION_IDS.HYDERABAD]: [
+    {regionIdFront: REGION_IDS.MYSORE, regionIdBack: REGION_IDS.HYDERABAD, rotation: "rotate-[45deg]", x: 39, y: 59.8 }
+  ],
+  [REGION_IDS.HYDERABAD + REGION_IDS.MADRAS]: [
+    {regionIdFront: REGION_IDS.HYDERABAD, regionIdBack: REGION_IDS.MADRAS, rotation: "-rotate-[15deg]", x: 48.2, y: 60.3 }
+  ],  
+  [REGION_IDS.MADRAS + REGION_IDS.HYDERABAD]: [
+    {regionIdFront: REGION_IDS.MADRAS, regionIdBack: REGION_IDS.HYDERABAD, rotation: "rotate-[165deg]", x: 49, y: 61.8 }
+  ],
+  [REGION_IDS.MYSORE + REGION_IDS.MADRAS]: [
+    {regionIdFront: REGION_IDS.MYSORE, regionIdBack: REGION_IDS.MADRAS, rotation: "-rotate-[105deg]", x: 44.2, y: 74.3 }
+  ],  
+  [REGION_IDS.MADRAS + REGION_IDS.MYSORE]: [
+    {regionIdFront: REGION_IDS.MADRAS, regionIdBack: REGION_IDS.MYSORE, rotation: "rotate-[70deg]", x: 45.5, y: 73.8 }
+  ],
+}
