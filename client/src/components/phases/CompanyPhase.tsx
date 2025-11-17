@@ -86,7 +86,6 @@ const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
       <div className="flex-1 space-y-4 overflow-y-auto">
         {/* Phase Controls */}
         <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-          <h3 className="font-bold text-green-700 mb-2">Phase Controls</h3>
           <div className="space-y-2">
             <button 
               onClick={handleReturnToEventPhase}
@@ -94,8 +93,6 @@ const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
             >
               Return to Event Phase
             </button>
-            <div className="grid grid-cols-2 gap-2">
-            </div>
           </div>
         </div>
 
@@ -114,7 +111,7 @@ const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
             <h3 className="font-bold mb-3 text-gray-800 capitalize">{selectedRegionData.name}:</h3>
             
             {/* Company Control Toggle */}
-            <div className="flex justify-between items-center mb-4 p-2 bg-gray-50 rounded">
+            <div className="flex justify-between items-center mb-1 p-2 bg-gray-50 rounded">
               <span className="text-gray-700 font-medium">Company Controlled:</span>
               <button
                 onClick={handleToggleCompanyControl}
@@ -129,7 +126,7 @@ const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
             </div>
             
             {/* Unrest Control */}
-            <div className="flex justify-between items-center mb-4 p-2 bg-gray-50 rounded">
+            <div className="flex justify-between items-center mb-1 p-2 bg-gray-50 rounded">
               <span className="text-gray-700 font-medium">Unrest:</span>
               <div className="flex items-center gap-2">
                 <button
@@ -150,7 +147,7 @@ const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
             </div>
 
             {/* Tower Height Control */}
-            <div className="flex justify-between items-center mb-4 p-2 bg-gray-50 rounded">
+            <div className="flex justify-between items-center mb-1 p-2 bg-gray-50 rounded">
               <span className="text-gray-700 font-medium">Tower Height:</span>
               <div className="flex items-center gap-2">
                 <button

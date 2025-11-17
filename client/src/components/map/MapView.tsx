@@ -572,7 +572,7 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
       )}
 
       {/* Render Elephant */}
-      {renderElephant("bombay", "maratha")}
+      {renderElephant("madras", "madras")}
 
       {/* Render Orders */}
       {Object.keys(gameState.regions).map(regionId => 

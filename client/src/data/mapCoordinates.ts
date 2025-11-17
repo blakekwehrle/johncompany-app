@@ -84,6 +84,30 @@ export const unrestPositions: Record<string, UnrestPosition> = {
 };
 
 export const elephantPositions:  Record<string, ElephantPosition[]> = {
+  [REGION_IDS.PUNJAB + REGION_IDS.PUNJAB]: [
+    {regionIdFront: REGION_IDS.PUNJAB, regionIdBack: REGION_IDS.PUNJAB, rotation: "-rotate-[20deg]", x: 16.5, y: 4.7 }
+  ],
+  [REGION_IDS.DELHI + REGION_IDS.DELHI]: [
+    {regionIdFront: REGION_IDS.DELHI, regionIdBack: REGION_IDS.DELHI, rotation: "rotate-[30deg]", x: 33.5, y: 6.7 }
+  ],
+  [REGION_IDS.BOMBAY + REGION_IDS.BOMBAY]: [
+    {regionIdFront: REGION_IDS.BOMBAY, regionIdBack: REGION_IDS.BOMBAY, rotation: "rotate-[230deg]", x: 27.5, y: 25.7 }
+  ],
+  [REGION_IDS.BENGAL + REGION_IDS.BENGAL]: [
+    {regionIdFront: REGION_IDS.BENGAL, regionIdBack: REGION_IDS.BENGAL, rotation: "rotate-[120deg]", x: 87.5, y: 8.7 }
+  ],
+  [REGION_IDS.MARATHA + REGION_IDS.MARATHA]: [
+    {regionIdFront: REGION_IDS.MARATHA, regionIdBack: REGION_IDS.MARATHA, rotation: "rotate-[120deg]", x: 71.5, y: 37.7 }
+  ],
+  [REGION_IDS.HYDERABAD + REGION_IDS.HYDERABAD]: [
+    {regionIdFront: REGION_IDS.HYDERABAD, regionIdBack: REGION_IDS.HYDERABAD, rotation: "rotate-[100deg]", x: 37.8, y: 44.7 }
+  ],
+  [REGION_IDS.MYSORE + REGION_IDS.MYSORE]: [
+    {regionIdFront: REGION_IDS.MYSORE, regionIdBack: REGION_IDS.MYSORE, rotation: "rotate-[280deg]", x: 31.8, y: 68.7 }
+  ],
+  [REGION_IDS.MADRAS + REGION_IDS.MADRAS]: [
+    {regionIdFront: REGION_IDS.MADRAS, regionIdBack: REGION_IDS.MADRAS, rotation: "rotate-[110deg]", x: 46.8, y: 66.7 }
+  ],
   [REGION_IDS.PUNJAB + REGION_IDS.BOMBAY]: [
     {regionIdFront: REGION_IDS.PUNJAB, regionIdBack: REGION_IDS.BOMBAY, rotation: "rotate-[10deg]", x: 11.5, y: 17.7 }
   ],
