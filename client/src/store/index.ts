@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GameState, Region, Order, EventType, ElephantShape } from '../types/game';
+import type { GameState, Region, Order, EventType, ElephantShape, ElephantState } from '../types/game';
 import { initialState, REGION_IDS, getOrdersByRegion, getNeighboringRegions, getOrderById } from '../data/initialState';
 
 import { rollStormDie, getRegionsByStormDirection, diceAnimation } from '../data/storm';
@@ -37,8 +37,10 @@ interface GameStore {
   // Elephant Actions
   moveElephant: (tailRegion: string, headRegion: string) => void;
   resolveElephantPeace: () => void;
+  resolveElephantMarch: (regionId: string, shape?: ElephantShape) => void;
   getCrisisType: () => 'rebellion' | 'invasion' | 'attack_on_company';
-  
+  getNextClockwisePosition: (regionId: string, elephantState: ElephantState) => ElephantState;
+  getFullyFormedOrNextPosition: (regionId: string) => ElephantState;
   // Storm Die & Animation
   startStormRoll: () => void;
   completeStormRoll: (stormRoll: any) => void;
@@ -383,8 +385,8 @@ export const useGameStore = create<GameStore>()(
             discardedEvents: []
           }
         }));
-        
-        get().moveElephant(regionId, regionId);
+
+        get().resolveElephantMarch(regionId, "circle")
         
         get().completeEvent();
       },
@@ -480,7 +482,87 @@ export const useGameStore = create<GameStore>()(
           });
         }
       },
+      resolveElephantMarch: (regionId: string, shape?: ElephantShape) => {
+        const state = get();
+        const currentRegion = state.gameState.regions[regionId];
+        if (currentRegion.towerHasFlag) {
+          currentRegion.neighbors.forEach(neighboringRegionID => {
+            const neighborRegion = state.gameState.regions[neighboringRegionID]
+            if (neighborRegion.towerHasFlagStar && (neighborRegion.flagColor === currentRegion.flagColor)){
+              get().moveElephant(regionId, neighboringRegionID);
+              return;
+            }
+          });
+        } 
+        else if (currentRegion.towerHasFlagStar) {
+          const m = get().getFullyFormedOrNextPosition(regionId)
+          get().moveElephant(m.headRegion, m.tailRegion);
+        }
+        //use elephantBorderClockwise to check if empire is fully formed. in that rare case its shape and flip.
+        else if (currentRegion.companyControlled) {
+          get().moveElephant(regionId, regionId);
+        } else {
+          // soverign
+          get().moveElephant(regionId, state.gameState.elephantRedirectLookup[shape+regionId].tailRegion);
+        }
+        //check imperial ambitions first 
 
+        //move to top of stack region
+        //. if region is company controlled - elephant moves within
+        //. if region dominated by another - place the Elephant on the border 
+        //     facing its current sovereign to indicate a looming Rebellion
+        //. If the region is sovereign, place the Elephant on the border matching
+        //     the shape (circle, triangle, or square) printed on the tile to indicate a 
+        //     looming Invasion. The Elephant should be facing towards the region on the 
+        //     other side of that border. If the Elephant faces a region that is already 
+        //     dominated by the acting region (with the Elephant’s tail), use the first 
+        //     clockwise region from that border where this is not true.
+      },
+      getNextClockwisePosition(regionId: string, elephantState: ElephantState) {
+        const state = get();
+        const edgesClockwise = state.gameState.elephantBorderClockwise[regionId];
+        
+        const currentIndex = edgesClockwise.findIndex(edge => 
+          edge.tailRegion === elephantState.tailRegion && 
+          edge.headRegion === elephantState.headRegion
+        );
+        
+        if (currentIndex === -1) {
+          console.log("getNextClockwisePosition returned a negative index, somethings wrong.")
+          return edgesClockwise[0];
+        }
+        
+        const nextIndex = (currentIndex + 1) % edgesClockwise.length;
+        return edgesClockwise[nextIndex];
+      },
+      getFullyFormedOrNextPosition(regionId: string) {
+        const state = get();
+        const elephantState = state.gameState.elephant;
+        const edges = state.gameState.elephantBorderClockwise[regionId];
+        
+        const currentRegionFlagColor = state.gameState.regions[regionId].flagColor;
+        let currentElephantState = elephantState;
+        
+        const headRegionFlagColor = state.gameState.regions[currentElephantState.headRegion].flagColor;
+        if (headRegionFlagColor !== currentRegionFlagColor) {
+          return currentElephantState;
+        }
+        
+        for (let i = 0; i < edges.length; i++) {
+          currentElephantState = this.getNextClockwisePosition(regionId, currentElephantState);
+          
+          const nextHeadRegionFlagColor = state.gameState.regions[currentElephantState.headRegion].flagColor;
+          if (nextHeadRegionFlagColor !== currentRegionFlagColor) {
+            return currentElephantState;
+          }
+        }
+        const firstEdge = edges[0];
+        return {
+          tailRegion: firstEdge.headRegion,
+          headRegion: firstEdge.tailRegion
+        };
+
+      },
       getCrisisType: () => {
         const state = get();
         const { elephant } = state.gameState;

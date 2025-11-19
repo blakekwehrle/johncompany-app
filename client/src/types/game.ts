@@ -18,6 +18,7 @@ export interface GameState {
 
   elephant: ElephantState;
   elephantRedirectLookup: Record<string, ElephantState> ;
+  elephantBorderClockwise: Record<string, ElephantState[]>;
   stormDie?: 'east' | 'west' | 'south' | 'none';
   crisisType?: 'rebellion' | 'invasion' | 'attack_on_company';
   eventPhaseComplete: boolean;
@@ -33,7 +34,7 @@ export interface Region {
   companyControlled: boolean;
   orders: string[]; // Array of order IDs
   neighbors: RegionId[];  // Array of region IDs
-  color: string;
+  flagColor: FlagColor;
   svgPath?: string;
 }
 
@@ -57,6 +58,8 @@ export interface ElephantState {
 }
 
 export type StormDirection = 'the east' | 'the west' | 'the south' | 'all seas' |'none';
+
+export type FlagColor = 'silver' | 'gold' | 'bronze';
 
 export interface StormDieSide {
   value: number;

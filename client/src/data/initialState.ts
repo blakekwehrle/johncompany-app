@@ -213,7 +213,7 @@ export const initialRegions: Record<RegionId, Region> = {
     companyControlled: true,
     orders: ['1'], 
     neighbors: [REGION_IDS.DELHI, REGION_IDS.BOMBAY],
-    color: '#f0f0f0',
+    flagColor: 'silver',
   },
   [REGION_IDS.DELHI]: {
     id: REGION_IDS.DELHI,
@@ -225,7 +225,7 @@ export const initialRegions: Record<RegionId, Region> = {
     companyControlled: true,
     orders: ['2', '3', '4'], 
     neighbors: [REGION_IDS.PUNJAB, REGION_IDS.BENGAL, REGION_IDS.BOMBAY, REGION_IDS.MARATHA],
-    color: '#e0e0e0',
+    flagColor: 'silver',
   },
   [REGION_IDS.BENGAL]: {
     id: REGION_IDS.BENGAL,
@@ -237,7 +237,7 @@ export const initialRegions: Record<RegionId, Region> = {
     companyControlled: true,
     orders: ['5', '6'],
     neighbors: [REGION_IDS.DELHI, REGION_IDS.MARATHA],
-    color: '#d4edda',
+    flagColor: 'silver',
   },
   [REGION_IDS.BOMBAY]: {
     id: REGION_IDS.BOMBAY,
@@ -249,7 +249,7 @@ export const initialRegions: Record<RegionId, Region> = {
     companyControlled: true,
     orders: ['7', '8', '9'], 
     neighbors: [REGION_IDS.PUNJAB, REGION_IDS.DELHI, REGION_IDS.MARATHA, REGION_IDS.HYDERABAD, REGION_IDS.MYSORE],
-    color: '#d4edda',
+    flagColor: 'gold',
   },
   [REGION_IDS.MARATHA]: {
     id: REGION_IDS.MARATHA,
@@ -261,7 +261,7 @@ export const initialRegions: Record<RegionId, Region> = {
     companyControlled: false,
     orders: ['10', '11', '12'],
     neighbors: [REGION_IDS.DELHI, REGION_IDS.BENGAL, REGION_IDS.BOMBAY, REGION_IDS.HYDERABAD],
-    color: '#f8d7da',
+    flagColor: 'silver',
   },
   [REGION_IDS.HYDERABAD]: {
     id: REGION_IDS.HYDERABAD,
@@ -273,7 +273,7 @@ export const initialRegions: Record<RegionId, Region> = {
     companyControlled: true,
     orders: ['13'],
     neighbors: [REGION_IDS.BOMBAY, REGION_IDS.MARATHA, REGION_IDS.MYSORE, REGION_IDS.MADRAS],
-    color: '#f0f0f0',
+    flagColor: 'silver',
   },
   [REGION_IDS.MYSORE]: {
     id: REGION_IDS.MYSORE,
@@ -285,7 +285,7 @@ export const initialRegions: Record<RegionId, Region> = {
     companyControlled: false,
     orders: ['14', '15'], 
     neighbors: [REGION_IDS.BOMBAY, REGION_IDS.HYDERABAD, REGION_IDS.MADRAS],
-    color: '#f8d7da',
+    flagColor: 'silver',
   },
   [REGION_IDS.MADRAS]: {
     id: REGION_IDS.MADRAS,
@@ -297,7 +297,7 @@ export const initialRegions: Record<RegionId, Region> = {
     companyControlled: true,
     orders: ['16', '17'],
     neighbors: [REGION_IDS.HYDERABAD, REGION_IDS.MYSORE],
-    color: '#d4edda',
+    flagColor: 'silver',
   },
 };
 
@@ -382,12 +382,42 @@ export const elephantRedirectLookup: Record<string, ElephantState> = {
   ['triangle' + REGION_IDS.MADRAS]: {tailRegion: REGION_IDS.MADRAS, headRegion: REGION_IDS.MYSORE },
 }
 
+export const elephantBorderClockwise: Record<string, ElephantState[]> = {
+  [REGION_IDS.PUNJAB]: [{tailRegion: REGION_IDS.PUNJAB, headRegion: REGION_IDS.DELHI}, 
+                        {tailRegion: REGION_IDS.PUNJAB, headRegion: REGION_IDS.BOMBAY}],
+  [REGION_IDS.DELHI]: [{tailRegion: REGION_IDS.DELHI, headRegion: REGION_IDS.BENGAL},
+                       {tailRegion: REGION_IDS.DELHI, headRegion: REGION_IDS.MARATHA},
+                       {tailRegion: REGION_IDS.DELHI, headRegion: REGION_IDS.BOMBAY},
+                       {tailRegion: REGION_IDS.DELHI, headRegion: REGION_IDS.PUNJAB}],
+  [REGION_IDS.BENGAL]: [{tailRegion: REGION_IDS.BENGAL, headRegion: REGION_IDS.MARATHA},
+                       {tailRegion: REGION_IDS.BENGAL, headRegion: REGION_IDS.DELHI}],
+  [REGION_IDS.BOMBAY]: [{tailRegion: REGION_IDS.BOMBAY, headRegion: REGION_IDS.PUNJAB},
+                       {tailRegion: REGION_IDS.BOMBAY, headRegion: REGION_IDS.DELHI},
+                       {tailRegion: REGION_IDS.BOMBAY, headRegion: REGION_IDS.MARATHA},
+                       {tailRegion: REGION_IDS.BOMBAY, headRegion: REGION_IDS.HYDERABAD},
+                       {tailRegion: REGION_IDS.BOMBAY, headRegion: REGION_IDS.MYSORE}],
+  [REGION_IDS.MARATHA]:[{tailRegion: REGION_IDS.MARATHA, headRegion: REGION_IDS.DELHI},
+                       {tailRegion: REGION_IDS.MARATHA, headRegion: REGION_IDS.BENGAL},
+                       {tailRegion: REGION_IDS.MARATHA, headRegion: REGION_IDS.HYDERABAD},
+                       {tailRegion: REGION_IDS.MARATHA, headRegion: REGION_IDS.BOMBAY}],
+  [REGION_IDS.HYDERABAD]:[{tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.BOMBAY},
+                       {tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.MARATHA},
+                       {tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.MADRAS},
+                       {tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.MYSORE}],
+  [REGION_IDS.MYSORE]:[{tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.BOMBAY},
+                       {tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.HYDERABAD},
+                       {tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.MADRAS}],
+  [REGION_IDS.MADRAS]:[{tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.MYSORE},
+                       {tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.HYDERABAD}],
+}
+
 export const initialState: GameState = {
   phase: 'company',
   regions: initialRegions,
   orders: initialOrders,
   peaceOrderConnections: peaceOrderConnections,
   elephantRedirectLookup: elephantRedirectLookup,
+  elephantBorderClockwise: elephantBorderClockwise,
   currentEventId: undefined,
   currentEventRegion: undefined,
   eventDeck: initialEventDeck,
