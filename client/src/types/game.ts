@@ -4,6 +4,8 @@ export interface GameState {
   phase: 'event' | 'company' | 'analysis';
   regions: Record<string, Region>;
   orders: Record<string, Order>;
+  peaceOrderConnections: Record<string, string[]>;
+
   currentEventId?: string; //eventids instead of event objects
   currentEventRegion?: string; 
   eventDeck: string[];
@@ -15,7 +17,7 @@ export interface GameState {
   eventsRemaining: number; 
 
   elephant: ElephantState;
-  
+  elephantRedirectLookup: Record<string, ElephantState> ;
   stormDie?: 'east' | 'west' | 'south' | 'none';
   crisisType?: 'rebellion' | 'invasion' | 'attack_on_company';
   eventPhaseComplete: boolean;
@@ -28,8 +30,6 @@ export interface Region {
   towerHeight: number;
   towerHasFlag: boolean;
   towerHasFlagStar: boolean;
-  elephantFacing: boolean;
-  elephantBackRegion: string | null; // Reference by ID
   companyControlled: boolean;
   orders: string[]; // Array of order IDs
   neighbors: RegionId[];  // Array of region IDs
@@ -54,7 +54,6 @@ export type ElephantShape = 'circle' | 'square' | 'triangle' | undefined;
 export interface ElephantState {
   tailRegion: string; 
   headRegion: string;
-  isWithinRegion: boolean; 
 }
 
 export type StormDirection = 'the east' | 'the west' | 'the south' | 'all seas' |'none';

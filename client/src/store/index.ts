@@ -35,8 +35,8 @@ interface GameStore {
   resolveShuffle: (regionId: string) => void;
   
   // Elephant Actions
-  moveElephant: (tailRegion: string, headRegion: string, isWithinRegion?: boolean) => void;
-  resolveElephantEvent: (eventId: string, currentRegion: string) => void;
+  moveElephant: (tailRegion: string, headRegion: string) => void;
+  resolveElephantPeace: () => void;
   getCrisisType: () => 'rebellion' | 'invasion' | 'attack_on_company';
   
   // Storm Die & Animation
@@ -266,14 +266,15 @@ export const useGameStore = create<GameStore>()(
       resolvePeace: (regionId: string, shape?: ElephantShape) => {
         console.log(`Resolving peace event for region: ${regionId}, moving to ${shape} border`);
         const state = get();
+        console.log(`Elephant Head: ${state.gameState.elephant.headRegion} and Elephant Tail: ${state.gameState.elephant.tailRegion}`)
         const region = state.gameState.regions[regionId];
-        
+        get().resolveElephantPeace();
         if (region) {
           if (region.companyControlled) {
-            get().moveElephant(regionId, regionId, true);
+            get().moveElephant(regionId, regionId);
           } else {
             const facingRegion = region.neighbors.length > 0 ? region.neighbors[0] : regionId;
-            get().moveElephant(regionId, facingRegion, false);
+            get().moveElephant(regionId, facingRegion);
           }
           console.log(`Peace event: opening orders between connected regions and modifying towers`);
         }
@@ -302,7 +303,7 @@ export const useGameStore = create<GameStore>()(
         }
         
         // After crisis, elephant moves based on success/failure
-        get().moveElephant(regionId, regionId, true);
+        get().moveElephant(regionId, regionId);
         
         get().completeEvent();
       },
@@ -383,40 +384,100 @@ export const useGameStore = create<GameStore>()(
           }
         }));
         
-        get().moveElephant(regionId, regionId, true);
+        get().moveElephant(regionId, regionId);
         
         get().completeEvent();
       },
 
-      moveElephant: (tailRegion: string, headRegion: string, isWithinRegion: boolean = false) => {
+      moveElephant: (tailRegion: string, headRegion: string) => {
         set((state) => ({
           gameState: {
             ...state.gameState,
             elephant: {
               tailRegion,
-              headRegion: isWithinRegion ? tailRegion : headRegion,
-              isWithinRegion
+              headRegion
             }
           }
         }));
-        console.log(`Elephant moved: tail in ${tailRegion}, facing ${isWithinRegion ? 'within region' : headRegion}`);
+        console.log(`Elephant moved: tail in ${tailRegion} head in ${headRegion}`);
       },
 
-      resolveElephantEvent: (eventId: string, currentRegion: string) => {
-        const event = getEventDefinition(eventId);
-        
-        switch (event.type) {
-          case 'peace':
-            get().resolvePeace(currentRegion, event.shape);
-            break;
-          case 'crisis':
-            get().resolveCrisis(currentRegion, event.crisisModifier);
-            break;
-          case 'leader':
-            get().resolveLeader(currentRegion);
-            break;
-          default:
-            console.log(`No special elephant handling for event type: ${event.type}`);
+      resolveElephantPeace: () => {
+        const state = get();
+        const { elephant } = state.gameState;
+        // within region: open all orders / clear unrest.
+        if (elephant.headRegion === elephant.tailRegion) {
+
+          const region = state.gameState.regions[elephant.headRegion];
+          let stackIfNotControlled = region.companyControlled ? 0 : 1;
+
+          const updatedOrders = { ...state.gameState.orders };
+          const ordersToOpen = state.gameState.regions[elephant.headRegion].orders;
+          
+          console.log(ordersToOpen);
+          ordersToOpen.forEach(orderId => {
+            if (updatedOrders[orderId]) {
+              updatedOrders[orderId] = {
+                ...updatedOrders[orderId],
+                open: true
+              };
+            }
+          });
+          set({
+            gameState: {
+              ...state.gameState,
+              orders: updatedOrders,
+              regions: {
+                ...state.gameState.regions,
+                [region.id]: {
+                  ...region,
+                  unrest: 0,
+                  towerHeight: region.towerHeight + stackIfNotControlled
+                }
+              }
+            }
+          });
+        } else {
+
+          const regionHead = state.gameState.regions[elephant.headRegion];
+          const regionTail = state.gameState.regions[elephant.tailRegion];
+
+          let stackIfNotControlledHead = regionHead.companyControlled ? 0 : 1;
+          let stackIfNotControlledTail = regionTail.companyControlled ? 0 : 1;
+
+          const updatedOrders = { ...state.gameState.orders };
+          const ordersToOpen = state.gameState.peaceOrderConnections[elephant.headRegion+elephant.tailRegion];
+
+          console.log(ordersToOpen);
+
+          ordersToOpen.forEach(orderId => {
+            if (updatedOrders[orderId]) {
+              updatedOrders[orderId] = {
+                ...updatedOrders[orderId],
+                open: true
+              };
+            }
+          });
+
+          set({
+            gameState: {
+              ...state.gameState,
+              orders: updatedOrders,
+              regions: {
+                ...state.gameState.regions,
+                [regionHead.id]: {
+                  ...regionHead,
+                  unrest: 0,
+                  towerHeight: regionHead.towerHeight + stackIfNotControlledHead
+                },
+                [regionTail.id]: {
+                  ...regionTail,
+                  unrest: 0,
+                  towerHeight: regionTail.towerHeight + stackIfNotControlledTail
+                }
+              }
+            }
+          });
         }
       },
 
@@ -424,7 +485,7 @@ export const useGameStore = create<GameStore>()(
         const state = get();
         const { elephant } = state.gameState;
         
-        if (elephant.isWithinRegion) {
+        if (elephant.headRegion === elephant.tailRegion) {
           return 'attack_on_company';
         }
         

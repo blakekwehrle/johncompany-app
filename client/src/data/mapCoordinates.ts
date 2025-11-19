@@ -80,7 +80,7 @@ export const unrestPositions: Record<string, UnrestPosition> = {
   [REGION_IDS.MARATHA]: { regionId: REGION_IDS.MARATHA, x: 55.7, y: 34.1 },
   [REGION_IDS.HYDERABAD]: { regionId: REGION_IDS.HYDERABAD, x: 47.5, y: 48.72 },
   [REGION_IDS.MYSORE]: { regionId: REGION_IDS.MYSORE, x: 39.41, y: 83.03 },
-  [REGION_IDS.MADRAS]: { regionId: REGION_IDS.MADRAS, x: 46.75, y: 67.8 }
+  [REGION_IDS.MADRAS]: { regionId: REGION_IDS.MADRAS, x: 47.75, y: 74.1 }
 };
 
 export const elephantPositions:  Record<string, ElephantPosition[]> = {
