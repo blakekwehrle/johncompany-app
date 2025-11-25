@@ -1,7 +1,6 @@
 // In src/components/phases/EventPhase.tsx
 import React from 'react';
 import { useGameStore } from '../../store';
-import { getEventDefinition } from '../../types/events';
 
 const EventPhase: React.FC = () => {
   const { 

@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GameState, Region, Order, EventType, ElephantShape, ElephantState } from '../types/game';
-import { initialState, REGION_IDS, getOrdersByRegion, getNeighboringRegions, getOrderById } from '../data/initialState';
+import type { GameState, Region, Order, ElephantShape, ElephantState } from '../types/game';
+import { initialState, getOrdersByRegion } from '../data/initialState';
 
-import { rollStormDie, getRegionsByStormDirection, diceAnimation } from '../data/storm';
+import { rollStormDie, getRegionsByStormDirection } from '../data/storm';
 import { closeNorthernmostOrder, areAllOrdersClosed, startCascade } from '../utils/gameLogic';
 import { getEventDefinition } from '../types/events';
 
@@ -29,7 +29,7 @@ interface GameStore {
   resolveWindfall: (regionId: string) => void;
   resolveTurmoil: (regionId: string) => void;
   resolvePeace: (regionId: string, shape?: ElephantShape) => void;
-  resolveCrisis: (regionId: string, crisisModifier?: number) => void;
+  resolveCrisis: (crisisModifier?: number) => void;
   determineCrisisType: (attackerRegion: Region, defenderRegion: Region) => string;
   resolveInvasionCrisis: (attackerRegionId: string, defenderRegionId:string, crisisModifier: number) => void;
   handleSuccessfulInvasion:(attackerRegionId: string, defenderRegionId:string)=> void;
@@ -209,7 +209,6 @@ export const useGameStore = create<GameStore>()(
       },
 
       handleEventResolution: () => {
-        const state = get();
         const currentEvent = get().getCurrentEvent();
         const currentRegion = get().getCurrentEventRegion();
         
@@ -227,7 +226,7 @@ export const useGameStore = create<GameStore>()(
             get().resolvePeace(currentRegion, currentEvent.shape);
             break;
           case 'crisis':
-            get().resolveCrisis(currentRegion, currentEvent.crisisModifier);
+            get().resolveCrisis(currentEvent.crisisModifier);
             break;
           case 'leader':
             get().resolveLeader(currentRegion);
@@ -519,10 +518,9 @@ export const useGameStore = create<GameStore>()(
         // prompt to lower company standing 
         console.log(`Company Standing lowered due to region loss`);
       },
-      resolveCrisis: (regionId: string, crisisModifier: number = 0) => {
+      resolveCrisis: (crisisModifier: number = 0) => {
         console.log(`Resolving crisis event with modifier: ${crisisModifier}`);
         const state = get();
-        
         const { elephant } = state.gameState;
         const attackerRegionId = elephant.tailRegion;
         const defenderRegionId = elephant.headRegion;
@@ -581,7 +579,7 @@ export const useGameStore = create<GameStore>()(
       resolveInvasionCrisis: (attackerRegionId: string, defenderRegionId: string, modifier: number) => {
         const state = get();
         const attackerRegion = state.gameState.regions[attackerRegionId];
-        const defenderRegion = state.gameState.regions[defenderRegionId];
+        //const defenderRegion = state.gameState.regions[defenderRegionId];
         
         const attackerStrength = get().getEmpireStrength(attackerRegionId) + modifier;
         const defenderStrength = get().getEmpireStrength(defenderRegionId);
@@ -689,10 +687,11 @@ export const useGameStore = create<GameStore>()(
         const state = get();
         const defenderRegion = state.gameState.regions[defenderRegionId];
         
+
         // Calculate attack strength: modifier + unrest
         const attackStrength = modifier + defenderRegion.unrest;
         console.log(`Attack on Company in ${defenderRegionId}: strength ${attackStrength} (modifier: ${modifier} + unrest: ${defenderRegion.unrest})`);
-        
+        console.log(`Attacker: ${attackerRegionId}`);
         // simple version - also needs army.
         //for now just using '2' for testing
         const defenseSuccessful = attackStrength <= 2;
@@ -826,7 +825,6 @@ export const useGameStore = create<GameStore>()(
       },
 
       moveElephantToTopOfStack: () => {
-        const state = get();
         const nextEventRegion = get().getNextEventRegion();
         
         if (nextEventRegion) {
@@ -842,7 +840,7 @@ export const useGameStore = create<GameStore>()(
         console.log(`Imperial Ambitions: Moving elephant to successful capital ${capitalRegionId}`);
         
         const state = get();
-        const capitalRegion = state.gameState.regions[capitalRegionId];
+        //const capitalRegion = state.gameState.regions[capitalRegionId];
         const currentEvent = get().getCurrentEvent();
         const shape = currentEvent?.shape || 'circle'; 
         
@@ -1470,7 +1468,7 @@ export const useGameStore = create<GameStore>()(
         }
       }),
       onRehydrateStorage: () => {
-        return (state, error) => {
+        return (state) => {
           if (state) {
             setTimeout(() => {
               state.recoverFromInterruptedRoll();

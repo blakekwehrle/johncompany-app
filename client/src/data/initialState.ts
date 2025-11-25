@@ -1,5 +1,5 @@
 import { getAllEventIds } from '../types/events';
-import type { GameState, Region, Order, Event, ElephantState } from '../types/game';
+import type { GameState, Region, Order, ElephantState } from '../types/game';
 import { stormDie } from './storm';
 
 
@@ -15,15 +15,6 @@ export const REGION_IDS = {
 } as const;
 
 export type RegionId = typeof REGION_IDS[keyof typeof REGION_IDS];
-
-const shuffleArray = <T>(array: T[]): T[] => {
-  const newArray = [...array];
-  for (let i = newArray.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-  }
-  return newArray;
-};
 
 export const initialEventDeck: string[] = getAllEventIds();
 

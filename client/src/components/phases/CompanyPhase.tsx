@@ -8,8 +8,6 @@ interface CompanyPhaseProps {
 const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
   const { 
     gameState, 
-    resetAllOrders, 
-    setAllOrdersOpen, 
     startEventPhase,
     updateRegion,
     updateOrder,

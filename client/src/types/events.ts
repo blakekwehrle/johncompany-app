@@ -1,5 +1,4 @@
 import type { EventDefinition, GameState } from '../types/game';
-import { closeNorthernmostOrder, areAllOrdersClosed, startCascade } from '../utils/gameLogic';
 
 
 import bengal_img from '../assets/images/ganjifa/backs/ganjifa_bengal.png';
@@ -10,7 +9,6 @@ import madras_img from '../assets/images/ganjifa/backs/ganjifa_madras.png';
 import maratha_img from '../assets/images/ganjifa/backs/ganjifa_maratha.png';
 import mysore_img from '../assets/images/ganjifa/backs/ganjifa_mysore.png';
 import punjab_img from '../assets/images/ganjifa/backs/ganjifa_punjab.png';
-import blank_img from '../assets/images/ganjifa/backs/ganjifa_blank.png';
 import crisis_1_img from '../assets/images/ganjifa/ganjifa_crisis_1.png';
 import crisis_2_img from '../assets/images/ganjifa/ganjifa_crisis_2.png';
 import crisis_3_img from '../assets/images/ganjifa/ganjifa_crisis_3.png';
