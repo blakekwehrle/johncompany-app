@@ -249,7 +249,7 @@ export const initialRegions: Record<RegionId, Region> = {
     companyControlled: true,
     orders: ['7', '8', '9'], 
     neighbors: [REGION_IDS.PUNJAB, REGION_IDS.DELHI, REGION_IDS.MARATHA, REGION_IDS.HYDERABAD, REGION_IDS.MYSORE],
-    flagColor: 'gold',
+    flagColor: 'silver',
   },
   [REGION_IDS.MARATHA]: {
     id: REGION_IDS.MARATHA,
@@ -374,6 +374,9 @@ export const elephantRedirectLookup: Record<string, ElephantState> = {
   ['circle' + REGION_IDS.MARATHA]: {tailRegion: REGION_IDS.MARATHA, headRegion: REGION_IDS.BOMBAY},
   ['square' + REGION_IDS.MARATHA]: {tailRegion: REGION_IDS.MARATHA, headRegion: REGION_IDS.DELHI},
   ['triangle' + REGION_IDS.MARATHA]: {tailRegion: REGION_IDS.MARATHA, headRegion: REGION_IDS.BENGAL },
+  ['circle' + REGION_IDS.HYDERABAD]: {tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.MADRAS},
+  ['square' + REGION_IDS.HYDERABAD]: {tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.BOMBAY},
+  ['triangle' + REGION_IDS.HYDERABAD]: {tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.MARATHA },
   ['circle' + REGION_IDS.MYSORE]: {tailRegion: REGION_IDS.MYSORE, headRegion: REGION_IDS.BOMBAY},
   ['square' + REGION_IDS.MYSORE]: {tailRegion: REGION_IDS.MYSORE, headRegion: REGION_IDS.MADRAS},
   ['triangle' + REGION_IDS.MYSORE]: {tailRegion: REGION_IDS.MYSORE, headRegion: REGION_IDS.HYDERABAD },

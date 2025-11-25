@@ -51,9 +51,9 @@ export const eventDefinitions: Record<string, EventDefinition> = {
     type: 'windfall',
     title: 'Windfall',
     image: windfall_1_img,
-    imageBack: bombay_img,
+    imageBack: hyderabad_img,
     description: 'Players with writers in the region and adjacent regions each receive £1.',
-    regionBack: REGION_IDS.BOMBAY,
+    regionBack: REGION_IDS.HYDERABAD,
     strength: undefined,
     crisisModifier: 0,
     effect: (state: GameState, currentRegion: string) => {
@@ -66,9 +66,9 @@ export const eventDefinitions: Record<string, EventDefinition> = {
     type: 'windfall',
     title: 'Windfall',
     image: windfall_2_img,
-    imageBack: bengal_img,
+    imageBack: madras_img,
     description: 'Players with writers in the region and adjacent regions each receive £1.',
-    regionBack: REGION_IDS.BENGAL,
+    regionBack: REGION_IDS.MADRAS,
     strength: undefined,
     crisisModifier: 0,
     effect: (state: GameState, currentRegion: string) => {
@@ -81,9 +81,9 @@ export const eventDefinitions: Record<string, EventDefinition> = {
     type: 'turmoil',
     title: 'Turmoil',
     image: turmoil_1_img,
-    imageBack: madras_img,
+    imageBack: punjab_img,
     description: 'Close the northernmost open order in the region. May cascade.',
-    regionBack: REGION_IDS.MADRAS,
+    regionBack: REGION_IDS.PUNJAB,
     strength: undefined,
     crisisModifier: 0,
     effect: (state: GameState, currentRegion: string) => {
@@ -106,6 +106,36 @@ export const eventDefinitions: Record<string, EventDefinition> = {
       return state;
     }
   },
+  'turmoil_3':{
+    id: 'turmoil_3',
+    type: 'turmoil',
+    title: 'Turmoil',
+    image: turmoil_3_img,
+    imageBack: delhi_img,
+    description: 'Close the northernmost open order in the region. May cascade.',
+    regionBack: REGION_IDS.DELHI,
+    strength: undefined,
+    crisisModifier: 0,
+    effect: (state: GameState, currentRegion: string) => {
+      console.log(`Turmoil in ${currentRegion}: Closing northernmost open order`);
+      return state;
+    }
+  },
+  'turmoil_4':{
+    id: 'turmoil_4',
+    type: 'turmoil',
+    title: 'Turmoil',
+    image: turmoil_4_img,
+    imageBack: bombay_img,
+    description: 'Close the northernmost open order in the region. May cascade.',
+    regionBack: REGION_IDS.BOMBAY,
+    strength: undefined,
+    crisisModifier: 0,
+    effect: (state: GameState, currentRegion: string) => {
+      console.log(`Turmoil in ${currentRegion}: Closing northernmost open order`);
+      return state;
+    }
+  },
   'peace_1':{
     id: 'peace_1',
     type: 'peace',
@@ -116,10 +146,9 @@ export const eventDefinitions: Record<string, EventDefinition> = {
     regionBack: REGION_IDS.HYDERABAD,
     strength: undefined,
     crisisModifier: 0,
-    shape: 'square', // Elephant will move to triangle border
+    shape: 'square', 
     effect: (state: GameState, currentRegion: string) => {
       console.log(`Peace event with elephant reference to ${currentRegion}, ${'square'}`);
-      // Peace event logic will be implemented in the store
       return state;
     }
   },
@@ -144,11 +173,96 @@ export const eventDefinitions: Record<string, EventDefinition> = {
     type: 'crisis',
     title: 'Resolve Crisis',
     image: crisis_1_img,
+    imageBack: delhi_img,
+    description: 'Rebellion, invasion, or attack on company based on elephant position.',
+    regionBack: REGION_IDS.DELHI,
+    strength: undefined,
+    crisisModifier: 0,
+    shape: 'triangle',
+    effect: (state: GameState, currentRegion: string) => {
+      console.log(`Crisis event with elephant at ${state.elephant.tailRegion}-${state.elephant.headRegion} border`);
+      console.log(`Crisis event with elephant reference to ${currentRegion}, ${'square'}`);
+      return state;
+    }
+  },
+  'crisis_2':{
+    id: 'crisis_2',
+    type: 'crisis',
+    title: 'Resolve Crisis',
+    image: crisis_2_img,
     imageBack: punjab_img,
     description: 'Rebellion, invasion, or attack on company based on elephant position.',
     regionBack: REGION_IDS.PUNJAB,
     strength: undefined,
-    crisisModifier: 0,
+    crisisModifier: -1,
+    shape: 'circle',
+    effect: (state: GameState, currentRegion: string) => {
+      console.log(`Crisis event with elephant at ${state.elephant.tailRegion}-${state.elephant.headRegion} border`);
+      console.log(`Crisis event with elephant reference to ${currentRegion}, ${'square'}`);
+      return state;
+    }
+  },
+  'crisis_3':{
+    id: 'crisis_3',
+    type: 'crisis',
+    title: 'Resolve Crisis',
+    image: crisis_3_img,
+    imageBack: maratha_img,
+    description: 'Rebellion, invasion, or attack on company based on elephant position.',
+    regionBack: REGION_IDS.MARATHA,
+    strength: undefined,
+    crisisModifier: 3,
+    shape: 'circle',
+    effect: (state: GameState, currentRegion: string) => {
+      console.log(`Crisis event with elephant at ${state.elephant.tailRegion}-${state.elephant.headRegion} border`);
+      console.log(`Crisis event with elephant reference to ${currentRegion}, ${'square'}`);
+      return state;
+    }
+  },
+  'crisis_4':{
+    id: 'crisis_4',
+    type: 'crisis',
+    title: 'Resolve Crisis',
+    image: crisis_4_img,
+    imageBack: bombay_img,
+    description: 'Rebellion, invasion, or attack on company based on elephant position.',
+    regionBack: REGION_IDS.BOMBAY,
+    strength: undefined,
+    crisisModifier: 1,
+    shape: 'square',
+    effect: (state: GameState, currentRegion: string) => {
+      console.log(`Crisis event with elephant at ${state.elephant.tailRegion}-${state.elephant.headRegion} border`);
+      console.log(`Crisis event with elephant reference to ${currentRegion}, ${'square'}`);
+      return state;
+    }
+  },
+  'crisis_5':{
+    id: 'crisis_5',
+    type: 'crisis',
+    title: 'Resolve Crisis',
+    image: crisis_5_img,
+    imageBack: bengal_img,
+    description: 'Rebellion, invasion, or attack on company based on elephant position.',
+    regionBack: REGION_IDS.BENGAL,
+    strength: undefined,
+    crisisModifier: 1,
+    shape: 'triangle',
+    effect: (state: GameState, currentRegion: string) => {
+      console.log(`Crisis event with elephant at ${state.elephant.tailRegion}-${state.elephant.headRegion} border`);
+      console.log(`Crisis event with elephant reference to ${currentRegion}, ${'square'}`);
+      return state;
+    }
+  },
+  'crisis_6':{
+    id: 'crisis_6',
+    type: 'crisis',
+    title: 'Resolve Crisis',
+    image: crisis_6_img,
+    imageBack: mysore_img,
+    description: 'Rebellion, invasion, or attack on company based on elephant position.',
+    regionBack: REGION_IDS.MYSORE,
+    strength: undefined,
+    crisisModifier: 2,
     shape: 'square',
     effect: (state: GameState, currentRegion: string) => {
       console.log(`Crisis event with elephant at ${state.elephant.tailRegion}-${state.elephant.headRegion} border`);

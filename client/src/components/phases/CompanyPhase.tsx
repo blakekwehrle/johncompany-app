@@ -53,11 +53,6 @@ const CompanyPhase: React.FC<CompanyPhaseProps> = ({ selectedRegion }) => {
 
   const handleDecreaseTowerHeight = () => {
     if (!selectedRegion || !selectedRegionData) return;
-    if (selectedRegionData.towerHeight == 1) {
-      updateRegion(selectedRegion, { 
-        companyControlled: true
-      });
-    }
     updateRegion(selectedRegion, { 
       towerHeight: Math.max(0, selectedRegionData.towerHeight - 1) 
     });

@@ -30,17 +30,29 @@ interface GameStore {
   resolveTurmoil: (regionId: string) => void;
   resolvePeace: (regionId: string, shape?: ElephantShape) => void;
   resolveCrisis: (regionId: string, crisisModifier?: number) => void;
+  determineCrisisType: (attackerRegion: Region, defenderRegion: Region) => string;
+  resolveInvasionCrisis: (attackerRegionId: string, defenderRegionId:string, crisisModifier: number) => void;
+  handleSuccessfulInvasion:(attackerRegionId: string, defenderRegionId:string)=> void;
+  resolveRebellionCrisis: (attackerRegionId: string, defenderRegionId:string, crisisModifier: number) => void;
+  resolveAdditionalRebellion: (regionId: string) => void;
+  resolveCompanyAttackCrisis: (attackerRegionId: string, defenderRegionId:string, crisisModifier: number) => void;
   resolveLeader: (regionId: string) => void;
   resolveForeignInvasion: (regionId: string) => void;
   resolveShuffle: (regionId: string) => void;
-  
+  resolveCompanyAttack: (regionId: string, strengthModifier: number) => void;
+  resolveRebellion: (regionId: string, strengthModifier: number) => void;
+  resolveRegionLoss: (regionId: string) => void;
+
   // Elephant Actions
   moveElephant: (tailRegion: string, headRegion: string) => void;
+  moveElephantToTopOfStack:() => void;
+  moveElephantWithImperialAmbitions:(attackerRegionId: string) => void;
   resolveElephantPeace: () => void;
   resolveElephantMarch: (regionId: string, shape?: ElephantShape) => void;
   getCrisisType: () => 'rebellion' | 'invasion' | 'attack_on_company';
   getNextClockwisePosition: (regionId: string, elephantState: ElephantState) => ElephantState;
   getFullyFormedOrNextPosition: (regionId: string) => ElephantState;
+  getEmpireStrength: (regionId: string) => number;
   // Storm Die & Animation
   startStormRoll: () => void;
   completeStormRoll: (stormRoll: any) => void;
@@ -284,61 +296,558 @@ export const useGameStore = create<GameStore>()(
         get().completeEvent();
       },
 
-      resolveCrisis: (regionId: string, crisisModifier: number = 0) => {
-        console.log(`Resolving crisis event with modifier: ${crisisModifier}`);
-        const state = get();
-        const crisisType = get().getCrisisType();
-        
-        console.log(`Crisis type: ${crisisType}`);
-        
-        // Basic crisis resolution
-        switch (crisisType) {
-          case 'rebellion':
-            console.log('Rebellion crisis: dominated region attacking its capital');
-            break;
-          case 'invasion':
-            console.log('Invasion crisis: sovereign region attacking another');
-            break;
-          case 'attack_on_company':
-            console.log('Attack on company: region attacking company-controlled territory');
-            break;
-        }
-        
-        // After crisis, elephant moves based on success/failure
-        get().moveElephant(regionId, regionId);
-        
-        get().completeEvent();
-      },
-
       resolveLeader: (regionId: string) => {
         console.log(`Resolving leader event for region: ${regionId}`);
         const state = get();
         const region = state.gameState.regions[regionId];
+        const currentEvent = get().getCurrentEvent();
         
-        if (region) {
-          if (!region.companyControlled && !region.towerHasFlag) {
-            // Sovereign region - add tower level
+        if (!region) {
+          console.error(`Region ${regionId} not found!`);
+          get().completeEvent();
+          return;
+        }
+
+        const strengthModifier = currentEvent?.strength ? parseInt(currentEvent.strength) : 0;
+        
+        if (region.companyControlled || (region.towerHasFlag && !region.towerHasFlagStar)) {
+          // dominated or company-controlled - rebellion
+          console.log(`Leader causing rebellion in ${regionId} with modifier: ${strengthModifier}`);
+          
+          if (region.companyControlled) {
+            get().resolveCompanyAttack(regionId, strengthModifier);
+          } else {
+            get().resolveRebellion(regionId, strengthModifier);
+          }
+        } else {
+          console.log(`Leader strengthening sovereign region ${regionId}`);
+          set((state) => ({
+            gameState: {
+              ...state.gameState,
+              regions: {
+                ...state.gameState.regions,
+                [regionId]: {
+                  ...region,
+                  towerHeight: region.towerHeight + 1
+                }
+              }
+            }
+          }));
+          get().completeEvent();
+        }
+      },
+
+      resolveRebellion: (regionId: string, modifier: number) => {
+        const state = get();
+        const region = state.gameState.regions[regionId];
+        
+        if (!region.towerHasFlag || region.towerHasFlagStar) {
+          console.error(`Region ${regionId} is not dominated, cannot rebel`);
+          get().completeEvent();
+          return;
+        }
+
+        const flagColor = region.flagColor;
+        const capital = Object.values(state.gameState.regions).find(r => 
+          r.flagColor === flagColor && r.towerHasFlagStar
+        );
+
+        if (!capital) {
+          console.error(`Could not find capital for dominated region ${regionId}`);
+          get().completeEvent();
+          return;
+        }
+
+        const attackerStrength = region.towerHeight + modifier;
+        const defenderStrength = capital.towerHeight;
+
+        console.log(`Rebellion: ${regionId} (strength: ${attackerStrength}) vs ${capital.id} (strength: ${defenderStrength})`);
+
+        if (attackerStrength > defenderStrength) {
+          console.log(`Rebellion successful! ${regionId} becomes sovereign`);
+          
+          set((state) => ({
+            gameState: {
+              ...state.gameState,
+              regions: {
+                ...state.gameState.regions,
+                [regionId]: {
+                  ...region,
+                  towerHasFlag: false,
+                  flagColor: 'silver'
+                }
+              }
+            }
+          }));
+
+          const updatedOrders = { ...state.gameState.orders };
+          const ordersToClose = state.gameState.regions[regionId].orders;
+          
+          let allOrdersClosed = true;
+          ordersToClose.forEach(orderId => {
+            if (updatedOrders[orderId] && updatedOrders[orderId].open) {
+              updatedOrders[orderId] = {
+                ...updatedOrders[orderId],
+                open: false
+              };
+              allOrdersClosed = false;
+            }
+          });
+
+          if (allOrdersClosed) {
+            console.log(`All orders already closed in ${regionId}, starting cascade...`);
+            const newState = startCascade(state.gameState, regionId);
+            set({ gameState: newState });
+          } else {
             set((state) => ({
               gameState: {
                 ...state.gameState,
-                regions: {
-                  ...state.gameState.regions,
-                  [regionId]: {
-                    ...region,
-                    towerHeight: region.towerHeight + 1
-                  }
-                }
+                orders: updatedOrders
               }
             }));
-          } else {
-            // Dominated or company-controlled - cause rebellion
-            console.log(`Leader causing rebellion in ${regionId}`);
-            get().resolveCrisis(regionId, 2);
-            return;
           }
+
+        } else {
+          console.log(`Rebellion failed! Removing tower level from ${capital.id}`);
+          set((state) => ({
+            gameState: {
+              ...state.gameState,
+              regions: {
+                ...state.gameState.regions,
+                [capital.id]: {
+                  ...capital,
+                  towerHeight: Math.max(0, capital.towerHeight - 1)
+                }
+              }
+            }
+          }));
+        }
+
+        get().completeEvent();
+      },
+
+      resolveCompanyAttack: (regionId: string, modifier: number) => {
+        const state = get();
+        const region = state.gameState.regions[regionId];
+        
+        if (!region.companyControlled) {
+          console.error(`Region ${regionId} is not company controlled`);
+          get().completeEvent();
+          return;
+        }
+
+        // Calculate attack strength: modifier + unrest
+        const attackStrength = modifier + region.unrest;
+        console.log(`Attack on Company in ${regionId}: strength ${attackStrength} (modifier: ${modifier} + unrest: ${region.unrest})`);
+
+        // simple version for now, will use army defense 
+        // for now: if attack strength > 0, region is lost
+        if (attackStrength > 0) {
+          console.log(`Company loses control of ${regionId}`);
+          get().resolveRegionLoss(regionId);
+        } else {
+          console.log(`Attack on Company in ${regionId} defended successfully`);
+          // Clear unrest 
+          set((state) => ({
+            gameState: {
+              ...state.gameState,
+              regions: {
+                ...state.gameState.regions,
+                [regionId]: {
+                  ...region,
+                  unrest: 0
+                }
+              }
+            }
+          }));
+        }
+
+        const otherUnrestRegions = Object.values(state.gameState.regions).filter(r => 
+          r.companyControlled && r.unrest > 0 && r.id !== regionId
+        );
+
+        otherUnrestRegions.forEach(unrestRegion => {
+          console.log(`Additional rebellion in ${unrestRegion.id} due to unrest`);
+            //just logging for now, but additional rebellions would occur in these regions.
+        });
+
+        get().completeEvent();
+      },
+
+      resolveRegionLoss: (regionId: string) => {
+        const state = get();
+        const region = state.gameState.regions[regionId];
+        
+        console.log(`Region loss in ${regionId}`);
+        
+        set((state) => ({
+          gameState: {
+            ...state.gameState,
+            regions: {
+              ...state.gameState.regions,
+              [regionId]: {
+                ...region,
+                companyControlled: false,
+                unrest: 0,
+                towerHeight: 1,
+                towerHasFlag: false,
+                towerHasFlagStar: false
+              }
+            }
+          }
+        }));
+
+        const updatedOrders = { ...state.gameState.orders };
+        const ordersToClose = state.gameState.regions[regionId].orders;
+        
+        ordersToClose.forEach(orderId => {
+          if (updatedOrders[orderId]) {
+            updatedOrders[orderId] = {
+              ...updatedOrders[orderId],
+              open: false
+            };
+          }
+        });
+
+        set((state) => ({
+          gameState: {
+            ...state.gameState,
+            orders: updatedOrders
+          }
+        }));
+
+        // prompt to lower company standing 
+        console.log(`Company Standing lowered due to region loss`);
+      },
+      resolveCrisis: (regionId: string, crisisModifier: number = 0) => {
+        console.log(`Resolving crisis event with modifier: ${crisisModifier}`);
+        const state = get();
+        
+        const { elephant } = state.gameState;
+        const attackerRegionId = elephant.tailRegion;
+        const defenderRegionId = elephant.headRegion;
+        
+        console.log(`Crisis: Elephant at ${attackerRegionId}-${defenderRegionId} border`);
+        
+        const attackerRegion = state.gameState.regions[attackerRegionId];
+        const defenderRegion = state.gameState.regions[defenderRegionId];
+        
+        if (!attackerRegion || !defenderRegion) {
+          console.error('Invalid elephant position for crisis');
+          get().completeEvent();
+          return;
+        }
+
+        const crisisType = get().determineCrisisType(attackerRegion, defenderRegion);
+        console.log(`Crisis type: ${crisisType}`);
+        
+        switch (crisisType) {
+          case 'invasion':
+            get().resolveInvasionCrisis(attackerRegionId, defenderRegionId, crisisModifier);
+            break;
+          case 'rebellion':
+            get().resolveRebellionCrisis(attackerRegionId, defenderRegionId, crisisModifier);
+            break;
+          case 'attack_on_company':
+            get().resolveCompanyAttackCrisis(attackerRegionId, defenderRegionId, crisisModifier);
+            break;
+          default:
+            console.error('Unknown crisis type');
+            get().completeEvent();
+        }
+      },
+
+      determineCrisisType: (attackerRegion: Region, defenderRegion: Region) => {
+        const state = get();
+        
+        if (state.gameState.elephant.tailRegion === state.gameState.elephant.headRegion) {
+          return 'attack_on_company';
+        }
+        
+        if (defenderRegion.companyControlled) {
+          return 'attack_on_company';
+        }
+        
+        // attacker is dominated by defender
+        if (attackerRegion.towerHasFlag && !attackerRegion.towerHasFlagStar && 
+            attackerRegion.flagColor === defenderRegion.flagColor && defenderRegion.towerHasFlagStar) {
+          return 'rebellion';
+        }
+        
+        // otherwise
+        return 'invasion';
+      },
+
+      resolveInvasionCrisis: (attackerRegionId: string, defenderRegionId: string, modifier: number) => {
+        const state = get();
+        const attackerRegion = state.gameState.regions[attackerRegionId];
+        const defenderRegion = state.gameState.regions[defenderRegionId];
+        
+        const attackerStrength = get().getEmpireStrength(attackerRegionId) + modifier;
+        const defenderStrength = get().getEmpireStrength(defenderRegionId);
+        
+        console.log(`Invasion: ${attackerRegionId} (strength: ${attackerStrength}) vs ${defenderRegionId} (strength: ${defenderStrength})`);
+        
+        if (attackerStrength > defenderStrength) {
+          console.log(`Invasion successful! ${attackerRegionId} conquers ${defenderRegionId}`);
+          get().handleSuccessfulInvasion(attackerRegionId, defenderRegionId);
+        } else {
+          console.log(`Invasion failed! Removing tower level from ${attackerRegionId}`);
+          set((state) => ({
+            gameState: {
+              ...state.gameState,
+              regions: {
+                ...state.gameState.regions,
+                [attackerRegionId]: {
+                  ...attackerRegion,
+                  towerHeight: Math.max(0, attackerRegion.towerHeight - 1)
+                }
+              }
+            }
+          }));
+          
+          get().moveElephantToTopOfStack();
         }
         
         get().completeEvent();
+      },
+
+      resolveRebellionCrisis: (attackerRegionId: string, defenderRegionId: string, modifier: number) => {
+        const state = get();
+        const attackerRegion = state.gameState.regions[attackerRegionId];
+        const defenderRegion = state.gameState.regions[defenderRegionId];
+        
+        const attackerStrength = attackerRegion.towerHeight + modifier;
+        const defenderStrength = defenderRegion.towerHeight;
+        
+        console.log(`Rebellion: ${attackerRegionId} (strength: ${attackerStrength}) vs ${defenderRegionId} (strength: ${defenderStrength})`);
+        
+        if (attackerStrength > defenderStrength) {
+          console.log(`Rebellion successful! ${attackerRegionId} becomes sovereign`);
+          
+          set((state) => ({
+            gameState: {
+              ...state.gameState,
+              regions: {
+                ...state.gameState.regions,
+                [attackerRegionId]: {
+                  ...attackerRegion,
+                  towerHasFlag: false,
+                  flagColor: 'silver'
+                }
+              }
+            }
+          }));
+          
+          const updatedOrders = { ...state.gameState.orders };
+          const ordersToClose = state.gameState.regions[attackerRegionId].orders;
+          
+          let allOrdersClosed = true;
+          ordersToClose.forEach(orderId => {
+            if (updatedOrders[orderId] && updatedOrders[orderId].open) {
+              updatedOrders[orderId] = {
+                ...updatedOrders[orderId],
+                open: false
+              };
+              allOrdersClosed = false;
+            }
+          });
+          
+          if (allOrdersClosed) {
+            console.log(`All orders already closed in ${attackerRegionId}, starting cascade...`);
+            const newState = startCascade(state.gameState, attackerRegionId);
+            set({ gameState: newState });
+          } else {
+            set((state) => ({
+              gameState: {
+                ...state.gameState,
+                orders: updatedOrders
+              }
+            }));
+          }
+        } else {
+          console.log(`Rebellion failed! Removing tower level from ${defenderRegionId}`);
+          set((state) => ({
+            gameState: {
+              ...state.gameState,
+              regions: {
+                ...state.gameState.regions,
+                [defenderRegionId]: {
+                  ...defenderRegion,
+                  towerHeight: Math.max(0, defenderRegion.towerHeight - 1)
+                }
+              }
+            }
+          }));
+        }
+        
+        get().moveElephantToTopOfStack();
+        get().completeEvent();
+      },
+
+      resolveCompanyAttackCrisis: (attackerRegionId: string, defenderRegionId: string, modifier: number) => {
+        const state = get();
+        const defenderRegion = state.gameState.regions[defenderRegionId];
+        
+        // Calculate attack strength: modifier + unrest
+        const attackStrength = modifier + defenderRegion.unrest;
+        console.log(`Attack on Company in ${defenderRegionId}: strength ${attackStrength} (modifier: ${modifier} + unrest: ${defenderRegion.unrest})`);
+        
+        // simple version - also needs army.
+        //for now just using '2' for testing
+        const defenseSuccessful = attackStrength <= 2;
+        
+        if (!defenseSuccessful) {
+          console.log(`Company loses control of ${defenderRegionId}`);
+          get().resolveRegionLoss(defenderRegionId);
+          
+          const otherUnrestRegions = Object.values(state.gameState.regions).filter(r => 
+            r.companyControlled && r.unrest > 0 && r.id !== defenderRegionId
+          );
+          
+          otherUnrestRegions.forEach(unrestRegion => {
+            console.log(`Additional rebellion in ${unrestRegion.id} due to unrest`);
+            get().resolveAdditionalRebellion(unrestRegion.id);
+          });
+        } else {
+          console.log(`Attack on Company in ${defenderRegionId} defended successfully`);
+          // clear unrest
+          set((state) => ({
+            gameState: {
+              ...state.gameState,
+              regions: {
+                ...state.gameState.regions,
+                [defenderRegionId]: {
+                  ...defenderRegion,
+                  unrest: 0
+                }
+              }
+            }
+          }));
+        }
+        
+        get().completeEvent();
+      },
+
+      resolveAdditionalRebellion: (regionId: string) => {
+        const state = get();
+        const region = state.gameState.regions[regionId];
+        
+        const attackStrength = region.unrest; 
+        
+        // again simple version just using '1' here
+        const defenseSuccessful = attackStrength <= 1; // 
+        
+        if (!defenseSuccessful) {
+          console.log(`Additional rebellion successful! Company loses ${regionId}`);
+          get().resolveRegionLoss(regionId);
+        } else {
+          console.log(`Additional rebellion in ${regionId} defended successfully`);
+          set((state) => ({
+            gameState: {
+              ...state.gameState,
+              regions: {
+                ...state.gameState.regions,
+                [regionId]: {
+                  ...region,
+                  unrest: 0
+                }
+              }
+            }
+          }));
+        }
+      },
+
+      getEmpireStrength: (regionId: string) => {
+        const state = get();
+        const region = state.gameState.regions[regionId];
+        
+        if (!region.towerHasFlag || !region.flagColor) {
+          return region.towerHeight;
+        }
+        
+        const empireRegions = Object.values(state.gameState.regions).filter(r => 
+          r.flagColor === region.flagColor
+        );
+        
+        return empireRegions.reduce((total, r) => total + r.towerHeight, 0);
+      },
+
+      // successful invasion aka empire creation/growth
+      //this one needs some love.
+      handleSuccessfulInvasion: (attackerRegionId: string, defenderRegionId: string) => {
+        const state = get();
+        const attackerRegion = state.gameState.regions[attackerRegionId];
+        const defenderRegion = state.gameState.regions[defenderRegionId];
+        
+        // Remove any flag from defender
+        const updatedRegions = { ...state.gameState.regions };
+        
+        updatedRegions[defenderRegionId] = {
+          ...defenderRegion,
+          towerHasFlag: true,
+          towerHasFlagStar: false, // Defender becomes dominated
+          flagColor: attackerRegion.flagColor || attackerRegionId // Use attacker's flag color or create new
+        };
+        
+        // If defender was a capital, shatter the empire (remove all matching flags)
+        if (defenderRegion.towerHasFlagStar) {
+          Object.values(state.gameState.regions).forEach(region => {
+            if (region.flagColor === defenderRegion.flagColor && region.id !== defenderRegionId) {
+              updatedRegions[region.id] = {
+                ...region,
+                towerHasFlag: false,
+                towerHasFlagStar: false,
+                flagColor: 'silver'
+              };
+            }
+          });
+        }
+        
+        // If attacker doesn't have a flag, make it a capital
+        if (!attackerRegion.towerHasFlag) {
+          updatedRegions[attackerRegionId] = {
+            ...attackerRegion,
+            towerHasFlag: false,
+            towerHasFlagStar: true,
+            flagColor: attackerRegion.flagColor || attackerRegionId
+          };
+        }
+        
+        set((state) => ({
+          gameState: {
+            ...state.gameState,
+            regions: updatedRegions
+          }
+        }));
+        
+        // Imperial Ambitions: Move elephant to successful attacker's capital
+        get().moveElephantWithImperialAmbitions(attackerRegionId);
+      },
+
+      moveElephantToTopOfStack: () => {
+        const state = get();
+        const nextEventRegion = get().getNextEventRegion();
+        
+        if (nextEventRegion) {
+          console.log(`Moving elephant to top of stack: ${nextEventRegion}`);
+          get().resolveElephantMarch(nextEventRegion, 'circle'); // Default shape
+        } else {
+          console.log('No next event region found for elephant movement');
+        }
+      },
+
+      // Move elephant with Imperial Ambitions (to successful attacker's capital)
+      moveElephantWithImperialAmbitions: (capitalRegionId: string) => {
+        console.log(`Imperial Ambitions: Moving elephant to successful capital ${capitalRegionId}`);
+        
+        const state = get();
+        const capitalRegion = state.gameState.regions[capitalRegionId];
+        const currentEvent = get().getCurrentEvent();
+        const shape = currentEvent?.shape || 'circle'; 
+        
+        // For Imperial Ambitions, elephant moves to capital and then marches from there
+        get().resolveElephantMarch(capitalRegionId, shape);
       },
 
       resolveForeignInvasion: (regionId: string) => {
@@ -503,6 +1012,8 @@ export const useGameStore = create<GameStore>()(
           get().moveElephant(regionId, regionId);
         } else {
           // soverign
+          //console.log(shape+regionId);
+          //console.log(state.gameState.elephantRedirectLookup[shape+regionId]);
           get().moveElephant(regionId, state.gameState.elephantRedirectLookup[shape+regionId].tailRegion);
         }
         //check imperial ambitions first 
