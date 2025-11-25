@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useGameStore } from './store';
-import { REGION_IDS } from './data/initialState';
 
 import MapView from './components/map/MapView';
 import EventPhase from './components/phases/EventPhase';

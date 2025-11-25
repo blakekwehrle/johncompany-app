@@ -3,7 +3,7 @@ import { useGameStore } from '../../store';
 import { diceAnimation } from '../../data/storm';
 
 const StormDie: React.FC = () => {
-  const { gameState, rollStormDie, startEventPhaseWithStorm } = useGameStore();
+  const { gameState, startEventPhaseWithStorm } = useGameStore();
 
   // Determine if we can start the event phase
   const canStartEventPhase = !gameState.eventPhaseComplete && !gameState.storm.currentRoll;
