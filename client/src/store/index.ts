@@ -839,7 +839,6 @@ export const useGameStore = create<GameStore>()(
       moveElephantWithImperialAmbitions: (capitalRegionId: string) => {
         console.log(`Imperial Ambitions: Moving elephant to successful capital ${capitalRegionId}`);
         
-        const state = get();
         //const capitalRegion = state.gameState.regions[capitalRegionId];
         const currentEvent = get().getCurrentEvent();
         const shape = currentEvent?.shape || 'circle'; 
