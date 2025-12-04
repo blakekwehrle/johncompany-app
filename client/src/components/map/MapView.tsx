@@ -145,17 +145,6 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
     };
   }, [displayRect]);
 
-  // Handle order click
-  const handleOrderClick = useCallback((orderId: string, event: React.MouseEvent) => {
-    event.stopPropagation(); // Prevent region selection
-    if (currentPhase === 'company') {
-      const order = gameState.orders[orderId];
-      if (order) {
-        updateOrder(orderId, { open: !order.open });
-      }
-    }
-  }, [currentPhase, gameState.orders, updateOrder]);
-
   // Initialize canvas with the regions image
   const initCanvas = useCallback(() => {
     console.log(naturalSize,containerSize);

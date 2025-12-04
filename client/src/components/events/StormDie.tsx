@@ -7,7 +7,6 @@ import sdr from '../../assets/images/dice/sdr.png';
 const StormDie: React.FC = () => {
   const { gameState, completeStormRoll, setStormDieResult, canCompleteEventPhase, startEventPhaseWithStorm } = useGameStore();
   const [showSelector, setShowSelector] = useState(false);
-  const canStartEventPhase = !gameState.eventPhaseComplete && !gameState.storm.currentRoll;
   const canChangeDie = !gameState.storm.isRolling && 
     (!gameState.storm.currentRoll || gameState.eventsRemaining === 0)
     && !gameState.stormDieConfirmed;
