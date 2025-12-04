@@ -423,6 +423,7 @@ export const initialState: GameState = {
   stormDie: 'none',
   crisisType: undefined,
   storm: stormDie,
+  stormDieConfirmed: false,
   eventsRemaining: 0,
   eventPhaseComplete: false, 
 };

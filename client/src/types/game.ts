@@ -20,6 +20,7 @@ export interface GameState {
   elephantRedirectLookup: Record<string, ElephantState> ;
   elephantBorderClockwise: Record<string, ElephantState[]>;
   stormDie?: 'east' | 'west' | 'south' | 'none';
+  stormDieConfirmed: boolean;
   crisisType?: 'rebellion' | 'invasion' | 'attack_on_company';
   eventPhaseComplete: boolean;
 }

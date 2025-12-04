@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GameState, Region, Order, ElephantShape, ElephantState } from '../types/game';
+import type { GameState, Region, Order, ElephantShape, ElephantState, StormDieSide } from '../types/game';
 import { initialState, getOrdersByRegion } from '../data/initialState';
 
 import { rollStormDie, getRegionsByStormDirection } from '../data/storm';
@@ -54,6 +54,7 @@ interface GameStore {
   getFullyFormedOrNextPosition: (regionId: string) => ElephantState;
   getEmpireStrength: (regionId: string) => number;
   // Storm Die & Animation
+  setStormDieResult: (result: StormDieSide) => void;
   startStormRoll: () => void;
   completeStormRoll: (stormRoll: any) => void;
   completeStormRollForeignInvasion: (stormRoll: any) => void;
@@ -97,6 +98,7 @@ export const useGameStore = create<GameStore>()(
             phase: 'event',
             eventsRemaining: 0,
             eventPhaseComplete: false,
+            stormDieConfirmed: false,
             storm: {
               ...state.gameState.storm,
               isRolling: false,
@@ -105,10 +107,11 @@ export const useGameStore = create<GameStore>()(
           }
         }));
       },
+      
 
       canCompleteEventPhase: () => {
         const state = get();
-        return state.gameState.eventsRemaining === 0 && !state.gameState.currentEventId;
+        return state.gameState.eventsRemaining === 0 && !state.gameState.currentEventId && state.gameState.stormDieConfirmed;
       },
 
       drawEvent: () => {
@@ -773,7 +776,6 @@ export const useGameStore = create<GameStore>()(
       },
 
       // successful invasion aka empire creation/growth
-      //this one needs some love.
       handleSuccessfulInvasion: (attackerRegionId: string, defenderRegionId: string) => {
         const state = get();
         const attackerRegion = state.gameState.regions[attackerRegionId];
@@ -820,7 +822,6 @@ export const useGameStore = create<GameStore>()(
           }
         }));
         
-        // Imperial Ambitions: Move elephant to successful attacker's capital
         get().moveElephantWithImperialAmbitions(attackerRegionId);
       },
 
@@ -1088,7 +1089,16 @@ export const useGameStore = create<GameStore>()(
         
         return 'invasion';
       },
-
+      setStormDieResult: (result: StormDieSide) => set((state) => ({
+        gameState: {
+          ...state.gameState,
+          storm: {
+            ...state.gameState.storm,
+            currentRoll: result,
+            isRolling: false
+          }
+        }
+      })),
       // Storm Die & Animation System
       startStormRoll: () => {
         console.log('Starting storm die roll animation...');
@@ -1125,7 +1135,8 @@ export const useGameStore = create<GameStore>()(
               isRolling: false,
               currentRoll: stormRoll
             },
-            eventsRemaining: stormRoll.value
+            eventsRemaining: stormRoll.value,
+            stormDieConfirmed: true
           }
         }));
       },
@@ -1161,7 +1172,7 @@ export const useGameStore = create<GameStore>()(
         
         return stormRoll;
       },
-
+      //needs renamed- rolls storm die in app now doesnt start anything
       startEventPhaseWithStorm: () => {
         const stormRoll = rollStormDie();
         get().startStormRoll();
@@ -1171,7 +1182,7 @@ export const useGameStore = create<GameStore>()(
         setTimeout(() => {
           const currentState = get();
           if (currentState.gameState.storm.isRolling) {
-            get().completeStormRoll(stormRoll);
+            get().setStormDieResult(stormRoll);
           }
         }, animationDuration);
         

@@ -321,13 +321,12 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
       return (
         <div
           key={`order-${orderPos.orderId}`}
-          className="absolute cursor-pointer transition-transform hover:scale-110"
+          className="absolute transition-transform"
           style={{
             left: absolutePos.x - 12,
             top: absolutePos.y - 12,
             zIndex: 30
           }}
-          onClick={(e) => handleOrderClick(orderPos.orderId, e)}
           title={`Order ${orderPos.orderId} - £${order.price} - ${order.open ? 'OPEN' : 'CLOSED'}`}
         >
           {!order.open && (
@@ -492,7 +491,7 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
         style={{
           left: absolutePos.x - 20,
           top: absolutePos.y - 20,
-          zIndex: 56
+          zIndex: 49
         }}
         title={`${elephant.regionIdFront} facing Elephant from ${elephant.regionIdBack}`}
       >
@@ -609,14 +608,14 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
       
             {/* Visual feedback for hovered region */}
       {hoveredRegion && currentPhase === 'company' && (
-        <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white p-2 rounded text-sm" style={{zIndex: 100}}>
+        <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white p-2 rounded text-sm" style={{zIndex: 10}}>
           {gameState.regions[hoveredRegion].name}
           {selectedRegion === hoveredRegion }
         </div>
       )}
 
       {/* Phase indicator */}
-      <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white p-2 rounded text-sm" style={{zIndex: 100}}>
+      <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white p-2 rounded text-sm" style={{zIndex: 10}}>
         {currentPhase === 'event' ? 'Event Phase' : 'Company Phase'}
       </div>
 

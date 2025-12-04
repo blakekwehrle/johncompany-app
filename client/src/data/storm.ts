@@ -12,8 +12,8 @@ export const stormDie: Storm = {
     { value: 2, direction: 'the west', image: sd2w },
     { value: 3, direction: 'the south', image: sd3s },
     { value: 4, direction: 'none', image: sd4 },
-    { value: 4, direction: 'none', image: sd4 },
-    { value: 1, direction: 'all seas', image: sd1 }
+    { value: 1, direction: 'all seas', image: sd1 },
+    { value: 4, direction: 'none', image: sd4 }
   ],
   isRolling: false
 };

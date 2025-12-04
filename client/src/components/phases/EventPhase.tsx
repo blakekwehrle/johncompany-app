@@ -58,7 +58,7 @@ const EventPhase: React.FC = () => {
   if (!currentEvent) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-500">
-        <p className="text-center">Processing events...</p>
+        <p className="text-center">Press Start Event Phase to continue!</p>
       </div>
     );
   }
