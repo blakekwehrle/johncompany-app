@@ -57,7 +57,7 @@ const COLOR_TO_REGION: Record<string, string> = {
 };
 
 const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, currentPhase }) => {
-  const { gameState, updateOrder } = useGameStore();
+  const { gameState } = useGameStore();
   const [isZoomed, setIsZoomed] = useState(false);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [imageData, setImageData] = useState<ImageData | null>(null);
