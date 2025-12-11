@@ -604,16 +604,6 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
         {currentPhase === 'event' ? 'Event Phase' : 'Company Phase'}
       </div>
 
-      {/* Debug info - remove in production */}
-      {/* {process.env.NODE_ENV === 'development' && (
-        <div className="absolute bottom-4 right-4 bg-black bg-opacity-70 text-white p-2 rounded text-xs">
-          Container: {Math.round(containerSize.width)}x{Math.round(containerSize.height)}
-          <br />
-          Display: {Math.round(displayRect.width)}x{Math.round(displayRect.height)}
-          <br />
-          Offset: {Math.round(displayRect.left)},{Math.round(displayRect.top)}
-        </div>
-      )} */}
     </div>
   );
 };
