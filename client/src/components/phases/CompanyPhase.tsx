@@ -1,4 +1,3 @@
-// In src/components/phases/CompanyPhase.tsx
 import React from 'react';
 import { useGameStore } from '../../store';
 interface CompanyPhaseProps {

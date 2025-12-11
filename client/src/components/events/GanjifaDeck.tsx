@@ -1,7 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../../store';
 import { getEventDefinition, REGION_IDS } from '../../types/events';
-// Import your region back images
 import blank_img from '../../assets/images/ganjifa/backs/ganjifa_blank.png';
 import bengal_img from '../../assets/images/ganjifa/backs/ganjifa_bengal.png';
 import bombay_img from '../../assets/images/ganjifa/backs/ganjifa_bombay.png';
@@ -45,7 +44,6 @@ const GanjifaDeck: React.FC = () => {
 
   const topDeckCard = getTopDeckCard();
 
-  // Determine if we can draw next event
   const canDrawNextEvent = gameState.eventsRemaining > 0 && !currentEvent;
 
   return (

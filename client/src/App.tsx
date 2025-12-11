@@ -13,7 +13,6 @@ function App() {
   const currentPhase = gameState.phase;
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
 
-  // Navigation between phases
   const renderPhaseContent = () => {
     switch (currentPhase) {
       case 'event':
