@@ -550,7 +550,7 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
           <img 
             src={regionOverlayImages[hoveredRegion]}
             alt={`${hoveredRegion} overlay`}
-            className="w-full h-full object-contain opacity-10 brightness-125"
+            className="w-full h-full object-contain opacity-30 brightness-125"
           />
         </div>
       )}
@@ -591,19 +591,6 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
       {/* Render Governor Overlays */}
       {renderGovernorOverlays()}
       
-            {/* Visual feedback for hovered region */}
-      {hoveredRegion && currentPhase === 'company' && (
-        <div className="absolute top-4 left-4 bg-black bg-opacity-70 text-white p-2 rounded text-sm" style={{zIndex: 10}}>
-          {gameState.regions[hoveredRegion].name}
-          {selectedRegion === hoveredRegion }
-        </div>
-      )}
-
-      {/* Phase indicator */}
-      <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 text-white p-2 rounded text-sm" style={{zIndex: 10}}>
-        {currentPhase === 'event' ? 'Event Phase' : 'Company Phase'}
-      </div>
-
     </div>
   );
 };
