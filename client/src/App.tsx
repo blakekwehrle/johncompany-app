@@ -12,7 +12,6 @@ function App() {
   const { gameState, resetGame } = useGameStore();
   const currentPhase = gameState.phase;
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const [showDisclaimer, setShowDisclaimer] = useState(true); // Add this state
 
   const renderPhaseContent = () => {
     switch (currentPhase) {
