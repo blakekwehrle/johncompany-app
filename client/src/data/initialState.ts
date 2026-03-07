@@ -16,7 +16,24 @@ export const REGION_IDS = {
 
 export type RegionId = typeof REGION_IDS[keyof typeof REGION_IDS];
 
-export const initialEventDeck: string[] = getAllEventIds();
+//shuffles event deck
+export function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]; // copy array so original isnt changed
+
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+
+  return shuffled;
+}
+
+export function createShuffledEventDeck(): string[] {
+  return shuffleArray(getAllEventIds());
+}
+
+export const initialEventDeck: string[] = shuffleArray(getAllEventIds());
 
 export const ORDER_IDS = {
 } as const;
@@ -25,7 +42,7 @@ export const initialOrders: Record<string, Order> = {
   // Punjab Orders
   '1': {
     id: '1',
-    open: true,
+    open: false,
     price: 7,
     priceSecondary: 3,
     region: REGION_IDS.PUNJAB,
@@ -45,7 +62,7 @@ export const initialOrders: Record<string, Order> = {
   },
   '3': {
     id: '3',
-    open: true,
+    open: false,
     price: 3,
     priceSecondary: 1,
     region: REGION_IDS.DELHI,
@@ -54,7 +71,7 @@ export const initialOrders: Record<string, Order> = {
   },
   '4': {
     id: '4',
-    open: true,
+    open: false,
     price: 5,
     priceSecondary: 2,
     region: REGION_IDS.DELHI,
@@ -65,7 +82,7 @@ export const initialOrders: Record<string, Order> = {
   // Bengal Orders
   '5': {
     id: '5',
-    open: false,
+    open: true,
     price: 5,
     priceSecondary: 2,
     region: REGION_IDS.BENGAL,
@@ -74,7 +91,7 @@ export const initialOrders: Record<string, Order> = {
   },
   '6': {
     id: '6',
-    open: false,
+    open: true,
     price: 6,
     priceSecondary: 3,
     region: REGION_IDS.BENGAL,
@@ -94,7 +111,7 @@ export const initialOrders: Record<string, Order> = {
   },
   '8': {
     id: '8',
-    open: true,
+    open: false,
     price: 3,
     priceSecondary: 1,
     region: REGION_IDS.BOMBAY,
@@ -123,7 +140,7 @@ export const initialOrders: Record<string, Order> = {
   },
   '11': {
     id: '11',
-    open: true,
+    open: false,
     price: 3,
     priceSecondary: 1,
     region: REGION_IDS.MARATHA,
@@ -143,7 +160,7 @@ export const initialOrders: Record<string, Order> = {
   // Hyderabad Orders
   '13': {
     id: '13',
-    open: true,
+    open: false,
     price: 7,
     priceSecondary: 3,
     region: REGION_IDS.HYDERABAD,
@@ -183,7 +200,7 @@ export const initialOrders: Record<string, Order> = {
   },
   '17': {
     id: '17',
-    open: true,
+    open: false,
     price: 4,
     priceSecondary: 2,
     region: REGION_IDS.MADRAS,
@@ -199,9 +216,9 @@ export const initialRegions: Record<RegionId, Region> = {
     name: "Punjab",
     unrest: 0,
     towerHeight: 0,
-    towerHasFlag: false,
+    towerHasFlag: true,
     towerHasFlagStar: false,
-    companyControlled: true,
+    companyControlled: false,
     orders: ['1'], 
     neighbors: [REGION_IDS.DELHI, REGION_IDS.BOMBAY],
     flagColor: 'silver',
@@ -210,10 +227,10 @@ export const initialRegions: Record<RegionId, Region> = {
     id: REGION_IDS.DELHI,
     name: "Delhi",
     unrest: 0,
-    towerHeight: 0,
+    towerHeight: 1,
     towerHasFlag: false,
-    towerHasFlagStar: false,
-    companyControlled: true,
+    towerHasFlagStar: true,
+    companyControlled: false,
     orders: ['2', '3', '4'], 
     neighbors: [REGION_IDS.PUNJAB, REGION_IDS.BENGAL, REGION_IDS.BOMBAY, REGION_IDS.MARATHA],
     flagColor: 'silver',
@@ -222,10 +239,10 @@ export const initialRegions: Record<RegionId, Region> = {
     id: REGION_IDS.BENGAL,
     name: "Bengal",
     unrest: 0,
-    towerHeight: 0,
+    towerHeight: 1,
     towerHasFlag: false,
     towerHasFlagStar: false,
-    companyControlled: true,
+    companyControlled: false,
     orders: ['5', '6'],
     neighbors: [REGION_IDS.DELHI, REGION_IDS.MARATHA],
     flagColor: 'silver',
@@ -234,10 +251,10 @@ export const initialRegions: Record<RegionId, Region> = {
     id: REGION_IDS.BOMBAY,
     name: "Bombay",
     unrest: 0,
-    towerHeight: 0,
+    towerHeight: 1,
     towerHasFlag: false,
     towerHasFlagStar: false,
-    companyControlled: true,
+    companyControlled: false,
     orders: ['7', '8', '9'], 
     neighbors: [REGION_IDS.PUNJAB, REGION_IDS.DELHI, REGION_IDS.MARATHA, REGION_IDS.HYDERABAD, REGION_IDS.MYSORE],
     flagColor: 'silver',
@@ -245,9 +262,9 @@ export const initialRegions: Record<RegionId, Region> = {
   [REGION_IDS.MARATHA]: {
     id: REGION_IDS.MARATHA,
     name: "Maratha",
-    unrest: 1,
-    towerHeight: 1,
-    towerHasFlag: false,
+    unrest: 0,
+    towerHeight: 2,
+    towerHasFlag: true,
     towerHasFlagStar: false,
     companyControlled: false,
     orders: ['10', '11', '12'],
@@ -258,10 +275,10 @@ export const initialRegions: Record<RegionId, Region> = {
     id: REGION_IDS.HYDERABAD,
     name: "Hyderabad",
     unrest: 0,
-    towerHeight: 0,
+    towerHeight: 1,
     towerHasFlag: false,
     towerHasFlagStar: false,
-    companyControlled: true,
+    companyControlled: false,
     orders: ['13'],
     neighbors: [REGION_IDS.BOMBAY, REGION_IDS.MARATHA, REGION_IDS.MYSORE, REGION_IDS.MADRAS],
     flagColor: 'silver',
@@ -269,7 +286,7 @@ export const initialRegions: Record<RegionId, Region> = {
   [REGION_IDS.MYSORE]: {
     id: REGION_IDS.MYSORE,
     name: "Mysore",
-    unrest: 2,
+    unrest: 0,
     towerHeight: 1,
     towerHasFlag: false,
     towerHasFlagStar: false,
@@ -282,10 +299,10 @@ export const initialRegions: Record<RegionId, Region> = {
     id: REGION_IDS.MADRAS,
     name: "Madras",
     unrest: 0,
-    towerHeight: 0,
+    towerHeight: 1,
     towerHasFlag: false,
     towerHasFlagStar: false,
-    companyControlled: true,
+    companyControlled: false,
     orders: ['16', '17'],
     neighbors: [REGION_IDS.HYDERABAD, REGION_IDS.MYSORE],
     flagColor: 'silver',
@@ -307,8 +324,8 @@ export const getOrderById = (orderId: string): Order => {
 };
 
 export const initialElephantState: ElephantState = {
-  tailRegion: REGION_IDS.BOMBAY,
-  headRegion: REGION_IDS.BOMBAY,
+  tailRegion: REGION_IDS.MARATHA,
+  headRegion: REGION_IDS.DELHI,
 };
 
 //order ids need for Peace
@@ -414,7 +431,7 @@ export const initialState: GameState = {
   elephantBorderClockwise: elephantBorderClockwise,
   currentEventId: undefined,
   currentEventRegion: undefined,
-  eventDeck: initialEventDeck,
+  eventDeck: createShuffledEventDeck(),
   discardedEvents: [],
   turn: 1,
   year: 1710,

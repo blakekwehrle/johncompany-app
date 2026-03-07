@@ -4,12 +4,13 @@ import { useGameStore } from '../../store';
 
 const EventPhase: React.FC = () => {
   const { 
-    gameState, 
-    getCurrentEvent, 
-    getCurrentEventRegion, 
-    completeEventPhase, 
-    canCompleteEventPhase 
-  } = useGameStore();
+  gameState, 
+  getCurrentEvent, 
+  getCurrentEventRegion, 
+  completeEventPhase, 
+  canCompleteEventPhase,
+  undoEvent
+} = useGameStore();
   
   const currentEvent = getCurrentEvent();
   const currentEventRegion = getCurrentEventRegion();
@@ -34,6 +35,18 @@ const EventPhase: React.FC = () => {
         <p className="text-sm mt-2 text-center">
           {gameState.eventsRemaining} event{gameState.eventsRemaining > 1 ? 's' : ''} remaining
         </p>
+        <button
+        onClick={undoEvent}
+        disabled={gameState.history.length === 0}
+        className={`mt-4 px-4 py-2 rounded-lg font-medium transition-colors ${
+          gameState.history.length === 0
+            ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+            : 'bg-red-500 text-white hover:bg-red-600'
+        }`}
+        type="button"
+      >
+        Undo Last Event
+      </button>
         <p className="text-xs mt-1 text-blue-500">
           Click "Draw Event" to continue
         </p>
@@ -42,18 +55,37 @@ const EventPhase: React.FC = () => {
   }
 
   if (canComplete) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center">
-        <p className="text-center text-black-600 font-medium mb-1">Events in India Concluded</p>
+  return (
+    <div className="h-full flex flex-col items-center justify-center">
+      <p className="text-center text-black-600 font-medium mb-1">
+        Events in India Concluded
+      </p>
+
+      <div className="flex flex-col gap-3 mt-3 w-full max-w-xs">
         <button
           onClick={completeEventPhase}
           className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors font-medium"
+          type="button"
         >
           Continue to Company Phase
         </button>
+
+        <button
+          onClick={undoEvent}
+          disabled={gameState.history.length === 0}
+          className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+            gameState.history.length === 0
+              ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+              : 'bg-red-500 text-white hover:bg-red-600'
+          }`}
+          type="button"
+        >
+          Undo Last Event
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   if (!currentEvent) {
     return (

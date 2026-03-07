@@ -350,7 +350,7 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
 
     return Object.values(towerPositions).map((towerPos) => {
       const region = gameState.regions[towerPos.regionId];
-      if (!region || region.towerHeight === 0) return null;
+      if (!region || region.towerHeight < 0 || region.companyControlled) return null;
 
       const absolutePos = getAbsolutePosition(towerPos);
       
@@ -483,7 +483,7 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
         <img 
           src={elephantImg} 
           alt="Elephant" 
-          className={`w-7 h-10 transform ${elephant.rotation}`} 
+          className={`w-7 h-10 transform rotate-180${elephant.rotation}`} 
         />
       </div>
     );

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { GameState, Region, Order, ElephantShape, ElephantState, StormDieSide } from '../types/game';
-import { initialState, getOrdersByRegion } from '../data/initialState';
+import { initialState, getOrdersByRegion, createShuffledEventDeck, } from '../data/initialState';
 
 import { rollStormDie, getRegionsByStormDirection } from '../data/storm';
 import { closeNorthernmostOrder, areAllOrdersClosed, startCascade } from '../utils/gameLogic';
@@ -83,6 +83,10 @@ interface GameStore {
   completeEventPhase: () => void;
   startCompanyPhase: () => void;
   isEventPhaseComplete: () => boolean;
+
+  //for undo ability
+  saveHistory:() => void;
+  undoEvent:() => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -90,6 +94,38 @@ export const useGameStore = create<GameStore>()(
     (set, get) => ({
       gameState: initialState,
 
+    saveHistory: () => {
+      const state = get();
+      const snapshot = structuredClone(state.gameState);
+      const MAX_HISTORY = 5;
+      const newHistory = [...state.gameState.history, snapshot];
+      if (newHistory.length > MAX_HISTORY) {
+        newHistory.shift();
+      }
+      set({
+        gameState: {
+          ...state.gameState,
+          history: newHistory
+        }
+      });
+    },
+
+  undoEvent: () => {
+    const state = get();
+
+    if (state.gameState.history.length === 0) {
+      console.warn("No history to undo");
+      return;
+    }
+    const previousState =
+    state.gameState.history[state.gameState.history.length - 1];
+    set({
+      gameState: {
+        ...structuredClone(previousState),
+        history: state.gameState.history.slice(0, -1)
+      }
+    });
+  },
       // Core Game Actions
       startEventPhase: () => {
         set((state) => ({
@@ -172,78 +208,101 @@ export const useGameStore = create<GameStore>()(
 
       // Event Resolution System
       resolveCurrentEvent: () => {
-        const state = get();
-        const currentEvent = get().getCurrentEvent();
-        const currentRegion = get().getCurrentEventRegion();
-        
-        if (!currentEvent || !currentRegion) {
-          console.error('Cannot resolve event: no current event or region');
-          return;
-        }
-        
-        console.log(`Resolving event: ${currentEvent.id} in region: ${currentRegion}`);
-        
-        try {
-          // Apply the event effect
-          const newGameState = currentEvent.effect(state.gameState, currentRegion);
-          
-          // Update state and complete the event
-          set({
-            gameState: {
-              ...newGameState,
-              currentEventId: undefined,
-              currentEventRegion: undefined,
-              phase: 'event',
-              turn: state.gameState.turn + 1
-            }
-          });
-        } catch (error) {
-          console.error('Error resolving event:', error);
-          // If there's an error, at least clear the current event
-          set((state) => ({
-            gameState: {
-              ...state.gameState,
-              currentEventId: undefined,
-              currentEventRegion: undefined,
-              phase: 'event'
-            }
-          }));
-        }
-      },
+  const state = get();
+  const currentEvent = get().getCurrentEvent();
+  const currentRegion = get().getCurrentEventRegion();
+
+  if (!currentEvent || !currentRegion) {
+    console.error('Cannot resolve event: no current event or region');
+    return;
+  }
+
+  // keep whatever history is currently in store
+  const history = state.gameState.history;
+
+  try {
+    const newGameState = currentEvent.effect(state.gameState, currentRegion);
+
+    set({
+      gameState: {
+        ...newGameState,
+        history, // preserve
+        currentEventId: undefined,
+        currentEventRegion: undefined,
+        phase: 'event',
+        turn: state.gameState.turn + 1
+      }
+    });
+  } catch (error) {
+    console.error('Error resolving event:', error);
+    set({
+      gameState: {
+        ...state.gameState,
+        history, //preserve
+        currentEventId: undefined,
+        currentEventRegion: undefined,
+        phase: 'event'
+      }
+    });
+  }
+},
 
       handleEventResolution: () => {
-        const currentEvent = get().getCurrentEvent();
-        const currentRegion = get().getCurrentEventRegion();
-        
-        if (!currentEvent || !currentRegion) return;
+  const state = get().gameState;
+  const currentEvent = get().getCurrentEvent();
+  const currentRegion = get().getCurrentEventRegion();
 
-        // Route to the appropriate resolver based on event type
-        switch (currentEvent.type) {
-          case 'windfall':
-            get().resolveWindfall(currentRegion);
-            break;
-          case 'turmoil':
-            get().resolveTurmoil(currentRegion);
-            break;
-          case 'peace':
-            get().resolvePeace(currentRegion, currentEvent.shape);
-            break;
-          case 'crisis':
-            get().resolveCrisis(currentEvent.crisisModifier);
-            break;
-          case 'leader':
-            get().resolveLeader(currentRegion);
-            break;
-          case 'foreign_invasion':
-            get().resolveForeignInvasion(currentRegion);
-            break;
-          case 'shuffle':
-            get().resolveShuffle(currentRegion);
-            break;
-          default:
-            get().completeEvent();
-        }
-      },
+  if (!currentEvent || !currentRegion) return;
+
+  // SAVE UNDO SNAPSHOT ONCE PER EVENT (max 5)
+  const MAX_HISTORY = 5;
+  const last = state.history[state.history.length - 1];
+
+  // Only push if we haven't already saved a snapshot for THIS event instance
+  const alreadySnapshottedThisEvent =
+    last?.currentEventId === state.currentEventId &&
+    last?.currentEventRegion === state.currentEventRegion &&
+    last?.turn === state.turn;
+
+  if (!alreadySnapshottedThisEvent) {
+    const snapshot = structuredClone(state);
+    const newHistory = [...state.history, snapshot].slice(-MAX_HISTORY);
+
+    set({
+      gameState: {
+        ...state,
+        history: newHistory
+      }
+    });
+  }
+
+  // Route to the appropriate resolver based on event type
+  switch (currentEvent.type) {
+    case 'windfall':
+      get().resolveWindfall(currentRegion);
+      break;
+    case 'turmoil':
+      get().resolveTurmoil(currentRegion);
+      break;
+    case 'peace':
+      get().resolvePeace(currentRegion, currentEvent.shape);
+      break;
+    case 'crisis':
+      get().resolveCrisis(currentEvent.crisisModifier);
+      break;
+    case 'leader':
+      get().resolveLeader(currentRegion);
+      break;
+    case 'foreign_invasion':
+      get().resolveForeignInvasion(currentRegion);
+      break;
+    case 'shuffle':
+      get().resolveShuffle(currentRegion);
+      break;
+    default:
+      get().completeEvent();
+  }
+},
 
       completeEvent: () => {
         get().resolveCurrentEvent();
@@ -1415,10 +1474,17 @@ export const useGameStore = create<GameStore>()(
       },
 
       resetGame: () => {
-        set({
-          gameState: initialState
-        });
-      },
+  set({
+    gameState: {
+      ...structuredClone(initialState),
+      eventDeck: createShuffledEventDeck(),
+      discardedEvents: [],
+      currentEventId: undefined,
+      currentEventRegion: undefined,
+      history: [],
+    }
+  });
+},
       drawNextEvent: () => {
         const state = get();
         
