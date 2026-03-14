@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { GameState, Region, Order, ElephantShape, ElephantState, StormDieSide } from '../types/game';
-import { initialState, getOrdersByRegion, createShuffledEventDeck, } from '../data/initialState';
+import { getInitialState, createShuffledEventDeck } from '../data/initialState';
+import type { ScenarioPreset } from '../data/initialState';
 
 import { rollStormDie, getRegionsByStormDirection } from '../data/storm';
 import { closeNorthernmostOrder, areAllOrdersClosed, startCascade } from '../utils/gameLogic';
@@ -10,6 +11,7 @@ import { getEventDefinition } from '../types/events';
 interface GameStore {
   // State
   gameState: GameState;
+  currentScenario: ScenarioPreset;
   
   // Core Actions
   startEventPhase: () => void;
@@ -19,7 +21,8 @@ interface GameStore {
   updateOrder: (orderId: string, updates: Partial<Order>) => void;
   updateOrders: (updates: Record<string, Partial<Order>>) => void;
   changePhase: (phase: GameState['phase']) => void;
-  resetGame: () => void;
+  resetGame: (scenario?: ScenarioPreset) => void;
+  setScenario: (scenario: ScenarioPreset) => void;
   
   // Event Resolution
   resolveCurrentEvent: () => void;
@@ -92,7 +95,12 @@ interface GameStore {
 export const useGameStore = create<GameStore>()(
   persist(
     (set, get) => ({
-      gameState: initialState,
+      gameState: getInitialState('1710'),
+      currentScenario: '1710',
+
+      setScenario: (scenario: ScenarioPreset) => {
+        set({ currentScenario: scenario });
+      },
 
     saveHistory: () => {
       const state = get();
@@ -1394,7 +1402,14 @@ export const useGameStore = create<GameStore>()(
       },
 
       getRegionOrders: (regionId: string) => {
-        return getOrdersByRegion(regionId as any);
+        const state = get().gameState;
+        const region = state.regions[regionId];
+
+        if (!region) return [];
+
+        return region.orders
+          .map((orderId) => state.orders[orderId])
+          .filter((order): order is Order => Boolean(order));
       },
 
       updateRegion: (regionId: string, updates: Partial<Region>) => {
@@ -1473,18 +1488,21 @@ export const useGameStore = create<GameStore>()(
         }));
       },
 
-      resetGame: () => {
-  set({
-    gameState: {
-      ...structuredClone(initialState),
-      eventDeck: createShuffledEventDeck(),
-      discardedEvents: [],
-      currentEventId: undefined,
-      currentEventRegion: undefined,
-      history: [],
-    }
-  });
-},
+      resetGame: (scenario?: ScenarioPreset) => {
+        const selectedScenario = scenario ?? get().currentScenario;
+
+        set({
+          currentScenario: selectedScenario,
+          gameState: {
+            ...getInitialState(selectedScenario),
+            eventDeck: createShuffledEventDeck(),
+            discardedEvents: [],
+            currentEventId: undefined,
+            currentEventRegion: undefined,
+            history: [],
+          }
+        });
+      },
       drawNextEvent: () => {
         const state = get();
         
@@ -1535,6 +1553,7 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'joco-game-storage',
       partialize: (state) => ({ 
+        currentScenario: state.currentScenario,
         gameState: {
           ...state.gameState,
           storm: {
