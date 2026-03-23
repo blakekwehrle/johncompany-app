@@ -104,7 +104,10 @@ export const useGameStore = create<GameStore>()(
 
     saveHistory: () => {
       const state = get();
-      const snapshot = structuredClone(state.gameState);
+      const snapshot = structuredClone({
+  ...state.gameState,
+  history: [],
+});
       const MAX_HISTORY = 5;
       const newHistory = [...state.gameState.history, snapshot];
       if (newHistory.length > MAX_HISTORY) {
@@ -136,21 +139,23 @@ export const useGameStore = create<GameStore>()(
   },
       // Core Game Actions
       startEventPhase: () => {
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            phase: 'event',
-            eventsRemaining: 0,
-            eventPhaseComplete: false,
-            stormDieConfirmed: false,
-            storm: {
-              ...state.gameState.storm,
-              isRolling: false,
-              currentRoll: undefined
-            }
-          }
-        }));
-      },
+  set((state) => ({
+    gameState: {
+      ...state.gameState,
+      phase: 'event',
+      eventsRemaining: 0,
+      eventPhaseComplete: false,
+      stormDieConfirmed: false,
+      history: [],  
+      storm: {
+        ...state.gameState.storm,
+        isRolling: false,
+        currentRoll: undefined
+      }
+    }
+  }));
+},
+
       
 
       canCompleteEventPhase: () => {
@@ -273,7 +278,10 @@ export const useGameStore = create<GameStore>()(
     last?.turn === state.turn;
 
   if (!alreadySnapshottedThisEvent) {
-    const snapshot = structuredClone(state);
+    const snapshot = structuredClone({
+  ...state,
+  history: [],
+});
     const newHistory = [...state.history, snapshot].slice(-MAX_HISTORY);
 
     set({
@@ -1537,13 +1545,14 @@ export const useGameStore = create<GameStore>()(
 
 
       startCompanyPhase: () => {
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            phase: 'company',
-          }
-        }));
-      },
+      set((state) => ({
+        gameState: {
+          ...state.gameState,
+          phase: 'company',
+          history: [],
+        }
+      }));
+    },
 
       isEventPhaseComplete: () => {
         const state = get();
@@ -1553,15 +1562,16 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'joco-game-storage',
       partialize: (state) => ({ 
-        currentScenario: state.currentScenario,
-        gameState: {
-          ...state.gameState,
-          storm: {
-            ...state.gameState.storm,
-            isRolling: false
-          }
-        }
-      }),
+  currentScenario: state.currentScenario,
+  gameState: {
+    ...state.gameState,
+    history: [],
+    storm: {
+      ...state.gameState.storm,
+      isRolling: false
+    }
+  }
+}),
       onRehydrateStorage: () => {
         return (state) => {
           if (state) {
