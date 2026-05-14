@@ -52,10 +52,12 @@ interface GameStore {
   moveElephantWithImperialAmbitions:(attackerRegionId: string) => void;
   resolveElephantPeace: () => void;
   resolveElephantMarch: (regionId: string, shape?: ElephantShape) => void;
+  getMarchElephantState: (regionId: string, shape?: ElephantShape) => ElephantState;
   getCrisisType: () => 'rebellion' | 'invasion' | 'attack_on_company';
   getNextClockwisePosition: (regionId: string, elephantState: ElephantState) => ElephantState;
-  getFullyFormedOrNextPosition: (regionId: string) => ElephantState;
+  getFullyFormedOrNextPosition: (regionId: string, shape?: ElephantShape) => ElephantState;
   getEmpireStrength: (regionId: string) => number;
+
   // Storm Die & Animation
   setStormDieResult: (result: StormDieSide) => void;
   startStormRoll: () => void;
@@ -87,10 +89,45 @@ interface GameStore {
   startCompanyPhase: () => void;
   isEventPhaseComplete: () => boolean;
 
-  //for undo ability
+  // for undo ability
   saveHistory:() => void;
   undoEvent:() => void;
 }
+
+//Helper to make sure empires are removed when the capital remains and no other dominated regions
+const removeLonelyEmpireCapitals = <T extends Record<string, any>>(regions: T): T => {
+  const updatedRegions = { ...regions };
+
+  const capitalRegions = Object.values(updatedRegions).filter(
+    (region) => region.towerHasFlagStar
+  );
+
+  capitalRegions.forEach((capitalRegion) => {
+    const empireRegions = Object.values(updatedRegions).filter(
+      (region) =>
+        region.flagColor === capitalRegion.flagColor &&
+        (region.towerHasFlag || region.towerHasFlagStar)
+    );
+
+    const dominatedRegions = empireRegions.filter(
+      (region) => region.towerHasFlag && !region.towerHasFlagStar
+    );
+
+    if (empireRegions.length === 1 && dominatedRegions.length === 0) {
+      console.log(
+        `Empire ${capitalRegion.flagColor} reduced to only capital ${capitalRegion.id}; removing capital flag.`
+      );
+
+      updatedRegions[capitalRegion.id] = {
+        ...updatedRegions[capitalRegion.id],
+        towerHasFlag: false,
+        towerHasFlagStar: false,
+      };
+    }
+  });
+
+  return updatedRegions;
+};
 
 export const useGameStore = create<GameStore>()(
   persist(
@@ -102,61 +139,64 @@ export const useGameStore = create<GameStore>()(
         set({ currentScenario: scenario });
       },
 
-    saveHistory: () => {
-      const state = get();
-      const snapshot = structuredClone({
-  ...state.gameState,
-  history: [],
-});
-      const MAX_HISTORY = 5;
-      const newHistory = [...state.gameState.history, snapshot];
-      if (newHistory.length > MAX_HISTORY) {
-        newHistory.shift();
-      }
-      set({
-        gameState: {
+      saveHistory: () => {
+        const state = get();
+        const snapshot = structuredClone({
           ...state.gameState,
-          history: newHistory
+          history: [],
+        });
+
+        const MAX_HISTORY = 5;
+        const newHistory = [...state.gameState.history, snapshot];
+        if (newHistory.length > MAX_HISTORY) {
+          newHistory.shift();
         }
-      });
-    },
 
-  undoEvent: () => {
-    const state = get();
+        set({
+          gameState: {
+            ...state.gameState,
+            history: newHistory
+          }
+        });
+      },
 
-    if (state.gameState.history.length === 0) {
-      console.warn("No history to undo");
-      return;
-    }
-    const previousState =
-    state.gameState.history[state.gameState.history.length - 1];
-    set({
-      gameState: {
-        ...structuredClone(previousState),
-        history: state.gameState.history.slice(0, -1)
-      }
-    });
-  },
+      undoEvent: () => {
+        const state = get();
+
+        if (state.gameState.history.length === 0) {
+          console.warn('No history to undo');
+          return;
+        }
+
+        const previousState =
+          state.gameState.history[state.gameState.history.length - 1];
+
+        set({
+          gameState: {
+            ...structuredClone(previousState),
+            history: state.gameState.history.slice(0, -1)
+          }
+        });
+      },
+
       // Core Game Actions
       startEventPhase: () => {
-  set((state) => ({
-    gameState: {
-      ...state.gameState,
-      phase: 'event',
-      eventsRemaining: 0,
-      eventPhaseComplete: false,
-      stormDieConfirmed: false,
-      history: [],  
-      storm: {
-        ...state.gameState.storm,
-        isRolling: false,
-        currentRoll: undefined
-      }
-    }
-  }));
-},
-
-      
+        set((state) => ({
+          gameState: {
+            ...state.gameState,
+            phase: 'event',
+            eventsRemaining: 0,
+            eventPhaseComplete: false,
+            stormDieConfirmed: false,
+            history: [],
+            storm: {
+              ...state.gameState.storm,
+              isRolling: false,
+              currentRoll: undefined
+            }
+          }
+        }));
+      },
 
       canCompleteEventPhase: () => {
         const state = get();
@@ -171,12 +211,10 @@ export const useGameStore = create<GameStore>()(
         console.log('Deck before draw:', eventDeck);
         console.log('Discarded before draw:', discardedEvents);
         
-        // If deck is empty, reshuffle discard 
         let currentDeck = eventDeck;
         if (currentDeck.length === 0) {
           console.log('Deck empty, reshuffling discard pile');
           currentDeck = [...discardedEvents];
-          // Shuffle 
           for (let i = currentDeck.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [currentDeck[i], currentDeck[j]] = [currentDeck[j], currentDeck[i]];
@@ -188,11 +226,9 @@ export const useGameStore = create<GameStore>()(
           return;
         }
         
-        // Draw the top event
         const drawnEventId = currentDeck[0];
         const remainingDeck = currentDeck.slice(1);
         
-        //current region is the regionBack of the NEXT event in deck
         let currentRegion: string;
         if (remainingDeck.length > 0) {
           const nextEventId = remainingDeck[0];
@@ -221,108 +257,109 @@ export const useGameStore = create<GameStore>()(
 
       // Event Resolution System
       resolveCurrentEvent: () => {
-  const state = get();
-  const currentEvent = get().getCurrentEvent();
-  const currentRegion = get().getCurrentEventRegion();
+        const state = get();
+        const currentEvent = get().getCurrentEvent();
+        const currentRegion = get().getCurrentEventRegion();
 
-  if (!currentEvent || !currentRegion) {
-    console.error('Cannot resolve event: no current event or region');
-    return;
-  }
+        if (!currentEvent || !currentRegion) {
+          console.error('Cannot resolve event: no current event or region');
+          return;
+        }
 
-  // keep whatever history is currently in store
-  const history = state.gameState.history;
+        const history = state.gameState.history;
 
-  try {
-    const newGameState = currentEvent.effect(state.gameState, currentRegion);
+        try {
+          const newGameState = currentEvent.effect(state.gameState, currentRegion);
 
-    set({
-      gameState: {
-        ...newGameState,
-        history, // preserve
-        currentEventId: undefined,
-        currentEventRegion: undefined,
-        phase: 'event',
-        turn: state.gameState.turn + 1
-      }
-    });
-  } catch (error) {
-    console.error('Error resolving event:', error);
-    set({
-      gameState: {
-        ...state.gameState,
-        history, //preserve
-        currentEventId: undefined,
-        currentEventRegion: undefined,
-        phase: 'event'
-      }
-    });
-  }
-},
+          set({
+            gameState: {
+              ...newGameState,
+              history,
+              currentEventId: undefined,
+              currentEventRegion: undefined,
+              phase: 'event',
+              turn: state.gameState.turn + 1
+            }
+          });
+        } catch (error) {
+          console.error('Error resolving event:', error);
+          set({
+            gameState: {
+              ...state.gameState,
+              history,
+              currentEventId: undefined,
+              currentEventRegion: undefined,
+              phase: 'event'
+            }
+          });
+        }
+      },
 
       handleEventResolution: () => {
-  const state = get().gameState;
-  const currentEvent = get().getCurrentEvent();
-  const currentRegion = get().getCurrentEventRegion();
+        const state = get().gameState;
+        const currentEvent = get().getCurrentEvent();
+        const currentRegion = get().getCurrentEventRegion();
 
-  if (!currentEvent || !currentRegion) return;
+        if (!currentEvent || !currentRegion) return;
 
-  // SAVE UNDO SNAPSHOT ONCE PER EVENT (max 5)
-  const MAX_HISTORY = 5;
-  const last = state.history[state.history.length - 1];
+        const MAX_HISTORY = 5;
+        const last = state.history[state.history.length - 1];
 
-  // Only push if we haven't already saved a snapshot for THIS event instance
-  const alreadySnapshottedThisEvent =
-    last?.currentEventId === state.currentEventId &&
-    last?.currentEventRegion === state.currentEventRegion &&
-    last?.turn === state.turn;
+        const alreadySnapshottedThisEvent =
+          last?.currentEventId === state.currentEventId &&
+          last?.currentEventRegion === state.currentEventRegion &&
+          last?.turn === state.turn;
 
-  if (!alreadySnapshottedThisEvent) {
-    const snapshot = structuredClone({
-  ...state,
-  history: [],
-});
-    const newHistory = [...state.history, snapshot].slice(-MAX_HISTORY);
+        if (!alreadySnapshottedThisEvent) {
+          const snapshot = structuredClone({
+            ...state,
+            history: [],
+          });
+          const newHistory = [...state.history, snapshot].slice(-MAX_HISTORY);
 
-    set({
-      gameState: {
-        ...state,
-        history: newHistory
-      }
-    });
-  }
+          set({
+            gameState: {
+              ...state,
+              history: newHistory
+            }
+          });
+        }
 
-  // Route to the appropriate resolver based on event type
-  switch (currentEvent.type) {
-    case 'windfall':
-      get().resolveWindfall(currentRegion);
-      break;
-    case 'turmoil':
-      get().resolveTurmoil(currentRegion);
-      break;
-    case 'peace':
-      get().resolvePeace(currentRegion, currentEvent.shape);
-      break;
-    case 'crisis':
-      get().resolveCrisis(currentEvent.crisisModifier);
-      break;
-    case 'leader':
-      get().resolveLeader(currentRegion);
-      break;
-    case 'foreign_invasion':
-      get().resolveForeignInvasion(currentRegion);
-      break;
-    case 'shuffle':
-      get().resolveShuffle(currentRegion);
-      break;
-    default:
-      get().completeEvent();
-  }
-},
+        switch (currentEvent.type) {
+          case 'windfall':
+            get().resolveWindfall(currentRegion);
+            break;
+          case 'turmoil':
+            get().resolveTurmoil(currentRegion);
+            break;
+          case 'peace':
+            get().resolvePeace(currentRegion, currentEvent.shape);
+            break;
+          case 'crisis':
+            get().resolveCrisis(currentEvent.crisisModifier);
+            break;
+          case 'leader':
+            get().resolveLeader(currentRegion);
+            break;
+          case 'foreign_invasion':
+            get().resolveForeignInvasion(currentRegion);
+            break;
+          case 'shuffle':
+            get().resolveShuffle(currentRegion);
+            break;
+          default:
+            get().completeEvent();
+        }
+      },
+
+
+      
 
       completeEvent: () => {
         get().resolveCurrentEvent();
       },
+
+      
 
       resolveWindfall: (regionId: string) => {
         console.log(`Resolving windfall for region: ${regionId}`);
@@ -340,13 +377,11 @@ export const useGameStore = create<GameStore>()(
         console.log(`Resolving turmoil for region: ${regionId}`);
         const state = get();
         
-        // Check if all orders are already closed in this region
         if (areAllOrdersClosed(state.gameState, regionId)) {
           console.log(`All orders already closed in ${regionId}, starting cascade...`);
           const newState = startCascade(state.gameState, regionId);
           set({ gameState: newState });
         } else {
-          // Close the northernmost open order
           const newState = closeNorthernmostOrder(state.gameState, regionId);
           set({ gameState: newState });
         }
@@ -355,23 +390,20 @@ export const useGameStore = create<GameStore>()(
       },
 
       resolvePeace: (regionId: string, shape?: ElephantShape) => {
-        console.log(`Resolving peace event for region: ${regionId}, moving to ${shape} border`);
-        const state = get();
-        console.log(`Elephant Head: ${state.gameState.elephant.headRegion} and Elephant Tail: ${state.gameState.elephant.tailRegion}`)
-        const region = state.gameState.regions[regionId];
-        get().resolveElephantPeace();
-        if (region) {
-          if (region.companyControlled) {
-            get().moveElephant(regionId, regionId);
-          } else {
-            const facingRegion = region.neighbors.length > 0 ? region.neighbors[0] : regionId;
-            get().moveElephant(regionId, facingRegion);
-          }
-          console.log(`Peace event: opening orders between connected regions and modifying towers`);
-        }
-        
-        get().completeEvent();
-      },
+      console.log(`Resolving peace event for region: ${regionId}, moving to ${shape} border`);
+      const state = get();
+      console.log(
+        `Elephant Head: ${state.gameState.elephant.headRegion} and Elephant Tail: ${state.gameState.elephant.tailRegion}`
+      );
+
+      get().resolveElephantPeace();
+
+      const next = get().getMarchElephantState(regionId, shape);
+      get().moveElephant(next.tailRegion, next.headRegion);
+
+      console.log(`Peace event: opening orders between connected regions and modifying towers`);
+      get().completeEvent();
+    },
 
       resolveLeader: (regionId: string) => {
         console.log(`Resolving leader event for region: ${regionId}`);
@@ -388,7 +420,6 @@ export const useGameStore = create<GameStore>()(
         const strengthModifier = currentEvent?.strength ? parseInt(currentEvent.strength) : 0;
         
         if (region.companyControlled || (region.towerHasFlag && !region.towerHasFlagStar)) {
-          // dominated or company-controlled - rebellion
           console.log(`Leader causing rebellion in ${regionId} with modifier: ${strengthModifier}`);
           
           if (region.companyControlled) {
@@ -483,7 +514,6 @@ export const useGameStore = create<GameStore>()(
               }
             }));
           }
-
         } else {
           console.log(`Rebellion failed! Removing tower level from ${capital.id}`);
           set((state) => ({
@@ -513,18 +543,14 @@ export const useGameStore = create<GameStore>()(
           return;
         }
 
-        // Calculate attack strength: modifier + unrest
         const attackStrength = modifier + region.unrest;
         console.log(`Attack on Company in ${regionId}: strength ${attackStrength} (modifier: ${modifier} + unrest: ${region.unrest})`);
 
-        // simple version for now, will use army defense 
-        // for now: if attack strength > 0, region is lost
         if (attackStrength > 0) {
           console.log(`Company loses control of ${regionId}`);
           get().resolveRegionLoss(regionId);
         } else {
           console.log(`Attack on Company in ${regionId} defended successfully`);
-          // Clear unrest 
           set((state) => ({
             gameState: {
               ...state.gameState,
@@ -545,7 +571,6 @@ export const useGameStore = create<GameStore>()(
 
         otherUnrestRegions.forEach(unrestRegion => {
           console.log(`Additional rebellion in ${unrestRegion.id} due to unrest`);
-            //just logging for now, but additional rebellions would occur in these regions.
         });
 
         get().completeEvent();
@@ -593,9 +618,9 @@ export const useGameStore = create<GameStore>()(
           }
         }));
 
-        // prompt to lower company standing 
         console.log(`Company Standing lowered due to region loss`);
       },
+
       resolveCrisis: (crisisModifier: number = 0) => {
         console.log(`Resolving crisis event with modifier: ${crisisModifier}`);
         const state = get();
@@ -644,134 +669,183 @@ export const useGameStore = create<GameStore>()(
           return 'attack_on_company';
         }
         
-        // attacker is dominated by defender
-        if (attackerRegion.towerHasFlag && !attackerRegion.towerHasFlagStar && 
-            attackerRegion.flagColor === defenderRegion.flagColor && defenderRegion.towerHasFlagStar) {
+        if (
+          attackerRegion.towerHasFlag &&
+          !attackerRegion.towerHasFlagStar &&
+          attackerRegion.flagColor === defenderRegion.flagColor &&
+          defenderRegion.towerHasFlagStar
+        ) {
           return 'rebellion';
         }
         
-        // otherwise
         return 'invasion';
       },
 
       resolveInvasionCrisis: (attackerRegionId: string, defenderRegionId: string, modifier: number) => {
-        const state = get();
-        const attackerRegion = state.gameState.regions[attackerRegionId];
-        //const defenderRegion = state.gameState.regions[defenderRegionId];
-        
-        const attackerStrength = get().getEmpireStrength(attackerRegionId) + modifier;
-        const defenderStrength = get().getEmpireStrength(defenderRegionId);
-        
-        console.log(`Invasion: ${attackerRegionId} (strength: ${attackerStrength}) vs ${defenderRegionId} (strength: ${defenderStrength})`);
-        
-        if (attackerStrength > defenderStrength) {
-          console.log(`Invasion successful! ${attackerRegionId} conquers ${defenderRegionId}`);
-          get().handleSuccessfulInvasion(attackerRegionId, defenderRegionId);
-        } else {
-          console.log(`Invasion failed! Removing tower level from ${attackerRegionId}`);
-          set((state) => ({
-            gameState: {
-              ...state.gameState,
-              regions: {
-                ...state.gameState.regions,
-                [attackerRegionId]: {
-                  ...attackerRegion,
-                  towerHeight: Math.max(0, attackerRegion.towerHeight - 1)
-                }
-              }
-            }
-          }));
-          
-          get().moveElephantToTopOfStack();
-        }
-        
-        get().completeEvent();
-      },
+  const state = get();
+  const attackerRegion = state.gameState.regions[attackerRegionId];
+  const defenderRegion = state.gameState.regions[defenderRegionId];
 
+  const getInvasionCombatStrength = (regionId: string) => {
+    const region = state.gameState.regions[regionId];
+
+    if (!region) {
+      console.warn(`No region found for invasion strength: ${regionId}`);
+      return 0;
+    }
+
+    // Only capital/star-flag regions use the combined strength of their whole empire.
+    if (region.towerHasFlagStar) {
+      return Object.values(state.gameState.regions)
+        .filter(
+          (candidateRegion) =>
+            candidateRegion.flagColor === region.flagColor &&
+            (candidateRegion.towerHasFlag || candidateRegion.towerHasFlagStar)
+        )
+        .reduce((total, candidateRegion) => total + candidateRegion.towerHeight, 0);
+    }
+
+    // Non-capital regions fight with only their own tower height.
+    return region.towerHeight;
+  };
+
+  const attackerStrength = getInvasionCombatStrength(attackerRegionId) + modifier;
+  const defenderStrength = getInvasionCombatStrength(defenderRegionId);
+
+  console.log(
+    `Invasion: ${attackerRegionId} (strength: ${attackerStrength}) vs ${defenderRegionId} (strength: ${defenderStrength})`
+  );
+
+  if (attackerStrength > defenderStrength) {
+    console.log(`Invasion successful! ${attackerRegionId} conquers ${defenderRegionId}`);
+    get().handleSuccessfulInvasion(attackerRegionId, defenderRegionId);
+  } else {
+    console.log(`Invasion failed! Removing tower level from ${attackerRegionId}`);
+
+    set((state) => {
+      const currentAttackerRegion = state.gameState.regions[attackerRegionId];
+
+      return {
+        gameState: {
+          ...state.gameState,
+          regions: {
+            ...state.gameState.regions,
+            [attackerRegionId]: {
+              ...currentAttackerRegion,
+              towerHeight: Math.max(0, currentAttackerRegion.towerHeight - 1),
+            },
+          },
+        },
+      };
+    });
+
+    get().moveElephantToTopOfStack();
+  }
+
+  get().completeEvent();
+},
       resolveRebellionCrisis: (attackerRegionId: string, defenderRegionId: string, modifier: number) => {
-        const state = get();
-        const attackerRegion = state.gameState.regions[attackerRegionId];
-        const defenderRegion = state.gameState.regions[defenderRegionId];
-        
-        const attackerStrength = attackerRegion.towerHeight + modifier;
-        const defenderStrength = defenderRegion.towerHeight;
-        
-        console.log(`Rebellion: ${attackerRegionId} (strength: ${attackerStrength}) vs ${defenderRegionId} (strength: ${defenderStrength})`);
-        
-        if (attackerStrength > defenderStrength) {
-          console.log(`Rebellion successful! ${attackerRegionId} becomes sovereign`);
-          
-          set((state) => ({
-            gameState: {
-              ...state.gameState,
-              regions: {
-                ...state.gameState.regions,
-                [attackerRegionId]: {
-                  ...attackerRegion,
-                  towerHasFlag: false,
-                  flagColor: 'silver'
-                }
-              }
-            }
-          }));
-          
-          const updatedOrders = { ...state.gameState.orders };
-          const ordersToClose = state.gameState.regions[attackerRegionId].orders;
-          
-          let allOrdersClosed = true;
-          ordersToClose.forEach(orderId => {
-            if (updatedOrders[orderId] && updatedOrders[orderId].open) {
-              updatedOrders[orderId] = {
-                ...updatedOrders[orderId],
-                open: false
-              };
-              allOrdersClosed = false;
-            }
-          });
-          
-          if (allOrdersClosed) {
-            console.log(`All orders already closed in ${attackerRegionId}, starting cascade...`);
-            const newState = startCascade(state.gameState, attackerRegionId);
-            set({ gameState: newState });
-          } else {
-            set((state) => ({
-              gameState: {
-                ...state.gameState,
-                orders: updatedOrders
-              }
-            }));
-          }
-        } else {
-          console.log(`Rebellion failed! Removing tower level from ${defenderRegionId}`);
-          set((state) => ({
-            gameState: {
-              ...state.gameState,
-              regions: {
-                ...state.gameState.regions,
-                [defenderRegionId]: {
-                  ...defenderRegion,
-                  towerHeight: Math.max(0, defenderRegion.towerHeight - 1)
-                }
-              }
-            }
-          }));
-        }
-        
-        get().moveElephantToTopOfStack();
-        get().completeEvent();
-      },
+  const state = get();
+  const attackerRegion = state.gameState.regions[attackerRegionId];
+  const defenderRegion = state.gameState.regions[defenderRegionId];
+
+  const attackerStrength = attackerRegion.towerHeight + modifier;
+  const defenderStrength = defenderRegion.towerHeight;
+
+  console.log(
+    `Rebellion: ${attackerRegionId} (strength: ${attackerStrength}) vs ${defenderRegionId} (strength: ${defenderStrength})`
+  );
+
+  if (attackerStrength > defenderStrength) {
+    console.log(`Rebellion successful! ${attackerRegionId} becomes sovereign`);
+
+    const updatedRegionsBeforeEmpireCleanup = {
+  ...state.gameState.regions,
+  [attackerRegionId]: {
+    ...attackerRegion,
+    towerHasFlag: false,
+    towerHasFlagStar: false,
+    flagColor: attackerRegion.flagColor,
+  },
+};
+
+const updatedRegions = removeLonelyEmpireCapitals(updatedRegionsBeforeEmpireCleanup);
+
+    const updatedOrders = { ...state.gameState.orders };
+    const ordersToClose = state.gameState.regions[attackerRegionId].orders;
+
+    let allOrdersClosed = true;
+
+    ordersToClose.forEach((orderId) => {
+      if (updatedOrders[orderId] && updatedOrders[orderId].open) {
+        updatedOrders[orderId] = {
+          ...updatedOrders[orderId],
+          open: false,
+        };
+        allOrdersClosed = false;
+      }
+    });
+
+    const gameStateAfterRebellion = {
+      ...state.gameState,
+      regions: updatedRegions,
+      orders: updatedOrders,
+    };
+
+    if (allOrdersClosed) {
+      console.log(`All orders already closed in ${attackerRegionId}, starting cascade...`);
+
+      // Important: cascade must start from the rebellion-updated state,
+      // not the old state before the attacking region's flag was removed.
+      const newState = startCascade(gameStateAfterRebellion, attackerRegionId);
+      set({ gameState: newState });
+    } else {
+      set({
+        gameState: gameStateAfterRebellion,
+      });
+    }
+  } else {
+    set((state) => {
+      const currentCapital = state.gameState.regions[defenderRegionId];
+
+      if (!currentCapital) {
+        console.warn(`Failed rebellion could not find capital region: ${defenderRegionId}`);
+        return state;
+      }
+
+      const nextTowerHeight = Math.max(0, currentCapital.towerHeight - 1);
+
+      console.log(
+        `Rebellion failed! Capital ${defenderRegionId} loses one tower level: ${currentCapital.towerHeight} -> ${nextTowerHeight}`
+      );
+
+      return {
+        gameState: {
+          ...state.gameState,
+          regions: {
+            ...state.gameState.regions,
+            [defenderRegionId]: {
+              ...currentCapital,
+              towerHeight: nextTowerHeight,
+            },
+          },
+        },
+      };
+    });
+  }
+
+  get().moveElephantToTopOfStack();
+  get().completeEvent();
+},
 
       resolveCompanyAttackCrisis: (attackerRegionId: string, defenderRegionId: string, modifier: number) => {
         const state = get();
         const defenderRegion = state.gameState.regions[defenderRegionId];
-        
 
-        // Calculate attack strength: modifier + unrest
         const attackStrength = modifier + defenderRegion.unrest;
         console.log(`Attack on Company in ${defenderRegionId}: strength ${attackStrength} (modifier: ${modifier} + unrest: ${defenderRegion.unrest})`);
         console.log(`Attacker: ${attackerRegionId}`);
-        // simple version - also needs army.
-        //for now just using '2' for testing
+
         const defenseSuccessful = attackStrength <= 2;
         
         if (!defenseSuccessful) {
@@ -788,7 +862,6 @@ export const useGameStore = create<GameStore>()(
           });
         } else {
           console.log(`Attack on Company in ${defenderRegionId} defended successfully`);
-          // clear unrest
           set((state) => ({
             gameState: {
               ...state.gameState,
@@ -811,9 +884,7 @@ export const useGameStore = create<GameStore>()(
         const region = state.gameState.regions[regionId];
         
         const attackStrength = region.unrest; 
-        
-        // again simple version just using '1' here
-        const defenseSuccessful = attackStrength <= 1; // 
+        const defenseSuccessful = attackStrength <= 1;
         
         if (!defenseSuccessful) {
           console.log(`Additional rebellion successful! Company loses ${regionId}`);
@@ -850,83 +921,191 @@ export const useGameStore = create<GameStore>()(
         return empireRegions.reduce((total, r) => total + r.towerHeight, 0);
       },
 
-      // successful invasion aka empire creation/growth
       handleSuccessfulInvasion: (attackerRegionId: string, defenderRegionId: string) => {
-        const state = get();
-        const attackerRegion = state.gameState.regions[attackerRegionId];
-        const defenderRegion = state.gameState.regions[defenderRegionId];
-        
-        // Remove any flag from defender
-        const updatedRegions = { ...state.gameState.regions };
-        
-        updatedRegions[defenderRegionId] = {
-          ...defenderRegion,
-          towerHasFlag: true,
-          towerHasFlagStar: false, // Defender becomes dominated
-          flagColor: attackerRegion.flagColor || attackerRegionId // Use attacker's flag color or create new
+  const state = get();
+  const attackerRegion = state.gameState.regions[attackerRegionId];
+  const defenderRegion = state.gameState.regions[defenderRegionId];
+
+  const updatedRegions = { ...state.gameState.regions };
+
+  const empireColors = ['gold', 'silver', 'bronze'] as const;
+
+  const attackerHasEmpireMarker =
+    attackerRegion.towerHasFlag || attackerRegion.towerHasFlagStar;
+
+  const attackerIsPartOfExistingEmpire =
+    attackerHasEmpireMarker &&
+    Object.values(state.gameState.regions).some(
+      (region) =>
+        region.towerHasFlagStar &&
+        region.flagColor === attackerRegion.flagColor
+    );
+
+  const usedEmpireColors = new Set(
+    Object.values(state.gameState.regions)
+      .filter((region) => region.towerHasFlagStar)
+      .map((region) => region.flagColor)
+  );
+
+  const availableEmpireColor = empireColors.find(
+    (color) => !usedEmpireColors.has(color)
+  );
+
+  const invasionEmpireColor = attackerIsPartOfExistingEmpire
+    ? attackerRegion.flagColor
+    : availableEmpireColor;
+
+  // If the defender was a capital, break apart that old empire first.
+  if (defenderRegion.towerHasFlagStar) {
+    Object.values(state.gameState.regions).forEach((region) => {
+      if (
+        region.flagColor === defenderRegion.flagColor &&
+        region.id !== defenderRegionId
+      ) {
+        updatedRegions[region.id] = {
+          ...region,
+          towerHasFlag: false,
+          towerHasFlagStar: false,
+          flagColor: region.flagColor,
         };
-        
-        // If defender was a capital, shatter the empire (remove all matching flags)
-        if (defenderRegion.towerHasFlagStar) {
-          Object.values(state.gameState.regions).forEach(region => {
-            if (region.flagColor === defenderRegion.flagColor && region.id !== defenderRegionId) {
-              updatedRegions[region.id] = {
-                ...region,
-                towerHasFlag: false,
-                towerHasFlagStar: false,
-                flagColor: 'silver'
-              };
-            }
-          });
-        }
-        
-        // If attacker doesn't have a flag, make it a capital
-        if (!attackerRegion.towerHasFlag) {
-          updatedRegions[attackerRegionId] = {
-            ...attackerRegion,
-            towerHasFlag: false,
-            towerHasFlagStar: true,
-            flagColor: attackerRegion.flagColor || attackerRegionId
-          };
-        }
-        
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            regions: updatedRegions
-          }
-        }));
-        
-        get().moveElephantWithImperialAmbitions(attackerRegionId);
-      },
+      }
+    });
+  }
 
+  // If the attacker is not already part of an empire and no empire colors remain,
+  // the invasion succeeds but no new empire is created.
+  if (!invasionEmpireColor) {
+    updatedRegions[defenderRegionId] = {
+      ...defenderRegion,
+      towerHasFlag: false,
+      towerHasFlagStar: false,
+      flagColor: defenderRegion.flagColor,
+    };
+
+    updatedRegions[attackerRegionId] = {
+      ...attackerRegion,
+      towerHasFlag: false,
+      towerHasFlagStar: false,
+      flagColor: attackerRegion.flagColor,
+    };
+
+    const cleanedRegions = removeLonelyEmpireCapitals(updatedRegions);
+
+set((state) => ({
+  gameState: {
+    ...state.gameState,
+    regions: cleanedRegions,
+  },
+}));
+
+    get().moveElephantWithImperialAmbitions(attackerRegionId);
+    return;
+  }
+
+  // Defender joins the attacker's existing empire, or the newly created empire.
+  updatedRegions[defenderRegionId] = {
+    ...defenderRegion,
+    towerHasFlag: true,
+    towerHasFlagStar: false,
+    flagColor: invasionEmpireColor,
+  };
+
+  // If the attacker was not already part of an empire, it becomes the new capital.
+  if (!attackerIsPartOfExistingEmpire) {
+    updatedRegions[attackerRegionId] = {
+      ...attackerRegion,
+      towerHasFlag: false,
+      towerHasFlagStar: true,
+      flagColor: invasionEmpireColor,
+    };
+  }
+
+  set((state) => ({
+    gameState: {
+      ...state.gameState,
+      regions: removeLonelyEmpireCapitals(updatedRegions),
+    },
+  }));
+
+  get().moveElephantWithImperialAmbitions(attackerRegionId);
+},
       moveElephantToTopOfStack: () => {
-        const nextEventRegion = get().getNextEventRegion();
-        
-        if (nextEventRegion) {
-          console.log(`Moving elephant to top of stack: ${nextEventRegion}`);
-          get().resolveElephantMarch(nextEventRegion, 'circle'); // Default shape
-        } else {
-          console.log('No next event region found for elephant movement');
-        }
-      },
+  const nextEventRegion = get().getNextEventRegion();
+  const currentEvent = get().getCurrentEvent();
+  const shape = currentEvent?.shape ?? 'circle';
 
-      // Move elephant with Imperial Ambitions (to successful attacker's capital)
+  if (nextEventRegion) {
+    console.log(
+      `Moving elephant to top of stack: ${nextEventRegion} with current card shape ${shape}`
+    );
+    get().resolveElephantMarch(nextEventRegion, shape);
+  } else {
+    console.log('No next event region found for elephant movement');
+  }
+},
+
       moveElephantWithImperialAmbitions: (capitalRegionId: string) => {
-        console.log(`Imperial Ambitions: Moving elephant to successful capital ${capitalRegionId}`);
-        
-        //const capitalRegion = state.gameState.regions[capitalRegionId];
-        const currentEvent = get().getCurrentEvent();
-        const shape = currentEvent?.shape || 'circle'; 
-        
-        // For Imperial Ambitions, elephant moves to capital and then marches from there
-        get().resolveElephantMarch(capitalRegionId, shape);
-      },
+  const state = get();
+  const currentEvent = state.getCurrentEvent();
+  const shape = currentEvent?.shape ?? 'circle';
+  const key = `${shape}${capitalRegionId}`;
+  const startingMove = state.gameState.elephantRedirectLookup[key];
+  const capitalRegion = state.gameState.regions[capitalRegionId];
+
+  if (!startingMove) {
+    console.warn(`No Imperial Ambitions elephant move found for ${key}`);
+    get().moveElephant(capitalRegionId, capitalRegionId);
+    return;
+  }
+
+  const empireColor = capitalRegion.flagColor;
+
+  let nextElephantState = startingMove;
+  const edges = state.gameState.elephantBorderClockwise[capitalRegionId] || [];
+
+  const isRegionInSameEmpire = (regionId: string) => {
+    const region = get().gameState.regions[regionId];
+
+    return (
+      region &&
+      empireColor &&
+      region.flagColor === empireColor &&
+      (region.towerHasFlag || region.towerHasFlagStar)
+    );
+  };
+
+  console.log(
+    `Imperial Ambitions starting move: ${nextElephantState.tailRegion} -> ${nextElephantState.headRegion}`
+  );
+
+  for (let i = 0; i < edges.length; i++) {
+    if (!isRegionInSameEmpire(nextElephantState.headRegion)) {
+      console.log(
+        `Imperial Ambitions final move: ${nextElephantState.tailRegion} -> ${nextElephantState.headRegion}`
+      );
+
+      get().moveElephant(nextElephantState.tailRegion, nextElephantState.headRegion);
+      return;
+    }
+
+    nextElephantState = get().getNextClockwisePosition(
+      capitalRegionId,
+      nextElephantState
+    );
+  }
+
+  // If every neighboring border is already inside the empire,
+  // place the elephant on the current shape's border with its head facing the capital.
+  console.log(
+    `Imperial Ambitions fully surrounded. Reversing current shape border: ${startingMove.headRegion} -> ${startingMove.tailRegion}`
+  );
+
+  get().moveElephant(startingMove.headRegion, startingMove.tailRegion);
+},
 
       resolveForeignInvasion: (regionId: string) => {
         console.log(`Resolving foreign invasion affecting: ${regionId}`);
         
-        // Roll storm die for foreign invasion
         const stormRoll = get().rollStormDie();
         let invasionRegions: string[] = [];
         
@@ -938,7 +1117,6 @@ export const useGameStore = create<GameStore>()(
         
         console.log(`Foreign invasion in regions: ${invasionRegions.join(', ')}`);
         
-        // Basic invasion resolution
         invasionRegions.forEach(invasionRegionId => {
           const attackRoll = Math.floor(Math.random() * 6) + 1;
           console.log(`Attack strength in ${invasionRegionId}: ${attackRoll}`);
@@ -948,30 +1126,29 @@ export const useGameStore = create<GameStore>()(
       },
 
       resolveShuffle: (regionId: string) => {
-        console.log(`Resolving shuffle event - moving elephant to: ${regionId}`);
-        
-        // Shuffle logic: take all discarded events and put them back in deck
-        const state = get();
-        const shuffledDeck = [...state.gameState.discardedEvents, ...state.gameState.eventDeck];
-        
-        // Simple shuffle
-        for (let i = shuffledDeck.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffledDeck[i], shuffledDeck[j]] = [shuffledDeck[j], shuffledDeck[i]];
-        }
-        
-        set((state) => ({
-          gameState: {
-            ...state.gameState,
-            eventDeck: shuffledDeck,
-            discardedEvents: []
-          }
-        }));
+  console.log(`Resolving shuffle event - moving elephant to: ${regionId}`);
+  console.log(`SHUFFLE ELEPHANT DEBUG: region=${regionId}, shape=circle`);
 
-        get().resolveElephantMarch(regionId, "circle")
-        
-        get().completeEvent();
-      },
+  get().resolveElephantMarch(regionId, 'circle');
+
+  const state = get();
+  const shuffledDeck = [...state.gameState.discardedEvents, ...state.gameState.eventDeck];
+
+  for (let i = shuffledDeck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledDeck[i], shuffledDeck[j]] = [shuffledDeck[j], shuffledDeck[i]];
+  }
+
+  set((state) => ({
+    gameState: {
+      ...state.gameState,
+      eventDeck: shuffledDeck,
+      discardedEvents: []
+    }
+  }));
+
+  get().completeEvent();
+},
 
       moveElephant: (tailRegion: string, headRegion: string) => {
         set((state) => ({
@@ -986,14 +1163,85 @@ export const useGameStore = create<GameStore>()(
         console.log(`Elephant moved: tail in ${tailRegion} head in ${headRegion}`);
       },
 
+      getMarchElephantState: (regionId: string, shape?: ElephantShape) => {
+  const state = get();
+  const currentRegion = state.gameState.regions[regionId];
+  const resolvedShape: ElephantShape = shape ?? 'circle';
+
+  if (!currentRegion) {
+    console.warn(`No region found for elephant march: ${regionId}`);
+    return state.gameState.elephant;
+  }
+
+  // Dominated region: point toward its sovereign capital
+  if (currentRegion.towerHasFlag && !currentRegion.towerHasFlagStar) {
+    for (const neighboringRegionID of currentRegion.neighbors) {
+      const neighborRegion = state.gameState.regions[neighboringRegionID];
+
+      if (
+        neighborRegion?.towerHasFlagStar &&
+        neighborRegion.flagColor === currentRegion.flagColor
+      ) {
+        return {
+          tailRegion: regionId,
+          headRegion: neighboringRegionID,
+        };
+      }
+    }
+
+    console.warn(`No matching capital found for dominated region: ${regionId}`);
+    return {
+      tailRegion: regionId,
+      headRegion: regionId,
+    };
+  }
+
+  // Capital region: use empire-border logic, starting from the current card shape's border
+  if (currentRegion.towerHasFlagStar) {
+    return get().getFullyFormedOrNextPosition(regionId, resolvedShape);
+  }
+
+  // Company-controlled region: elephant stays within the region
+  if (currentRegion.companyControlled) {
+    return {
+      tailRegion: regionId,
+      headRegion: regionId,
+    };
+  }
+
+  // Sovereign region: use printed-shape redirect lookup
+  const key = `${resolvedShape}${regionId}`;
+  const move = state.gameState.elephantRedirectLookup[key];
+
+  console.log('Elephant sovereign lookup', {
+    regionId,
+    shape,
+    resolvedShape,
+    key,
+    move,
+  });
+
+  if (!move) {
+    console.warn(`No elephant redirect found for key: ${key}`);
+    return {
+      tailRegion: regionId,
+      headRegion: regionId,
+    };
+  }
+
+  return {
+    tailRegion: move.tailRegion,
+    headRegion: move.headRegion,
+  };
+},
+
       resolveElephantPeace: () => {
         const state = get();
         const { elephant } = state.gameState;
-        // within region: open all orders / clear unrest.
-        if (elephant.headRegion === elephant.tailRegion) {
 
+        if (elephant.headRegion === elephant.tailRegion) {
           const region = state.gameState.regions[elephant.headRegion];
-          let stackIfNotControlled = region.companyControlled ? 0 : 1;
+          const stackIfNotControlled = region.companyControlled ? 0 : 1;
 
           const updatedOrders = { ...state.gameState.orders };
           const ordersToOpen = state.gameState.regions[elephant.headRegion].orders;
@@ -1007,6 +1255,7 @@ export const useGameStore = create<GameStore>()(
               };
             }
           });
+
           set({
             gameState: {
               ...state.gameState,
@@ -1022,15 +1271,14 @@ export const useGameStore = create<GameStore>()(
             }
           });
         } else {
-
           const regionHead = state.gameState.regions[elephant.headRegion];
           const regionTail = state.gameState.regions[elephant.tailRegion];
 
-          let stackIfNotControlledHead = regionHead.companyControlled ? 0 : 1;
-          let stackIfNotControlledTail = regionTail.companyControlled ? 0 : 1;
+          const stackIfNotControlledHead = regionHead.companyControlled ? 0 : 1;
+          const stackIfNotControlledTail = regionTail.companyControlled ? 0 : 1;
 
           const updatedOrders = { ...state.gameState.orders };
-          const ordersToOpen = state.gameState.peaceOrderConnections[elephant.headRegion+elephant.tailRegion];
+          const ordersToOpen = state.gameState.peaceOrderConnections[elephant.headRegion + elephant.tailRegion];
 
           console.log(ordersToOpen);
 
@@ -1064,44 +1312,13 @@ export const useGameStore = create<GameStore>()(
           });
         }
       },
-      resolveElephantMarch: (regionId: string, shape?: ElephantShape) => {
-        const state = get();
-        const currentRegion = state.gameState.regions[regionId];
-        if (currentRegion.towerHasFlag) {
-          currentRegion.neighbors.forEach(neighboringRegionID => {
-            const neighborRegion = state.gameState.regions[neighboringRegionID]
-            if (neighborRegion.towerHasFlagStar && (neighborRegion.flagColor === currentRegion.flagColor)){
-              get().moveElephant(regionId, neighboringRegionID);
-              return;
-            }
-          });
-        } 
-        else if (currentRegion.towerHasFlagStar) {
-          const m = get().getFullyFormedOrNextPosition(regionId)
-          get().moveElephant(m.headRegion, m.tailRegion);
-        }
-        //use elephantBorderClockwise to check if empire is fully formed. in that rare case its shape and flip.
-        else if (currentRegion.companyControlled) {
-          get().moveElephant(regionId, regionId);
-        } else {
-          // soverign
-          //console.log(shape+regionId);
-          //console.log(state.gameState.elephantRedirectLookup[shape+regionId]);
-          get().moveElephant(regionId, state.gameState.elephantRedirectLookup[shape+regionId].tailRegion);
-        }
-        //check imperial ambitions first 
 
-        //move to top of stack region
-        //. if region is company controlled - elephant moves within
-        //. if region dominated by another - place the Elephant on the border 
-        //     facing its current sovereign to indicate a looming Rebellion
-        //. If the region is sovereign, place the Elephant on the border matching
-        //     the shape (circle, triangle, or square) printed on the tile to indicate a 
-        //     looming Invasion. The Elephant should be facing towards the region on the 
-        //     other side of that border. If the Elephant faces a region that is already 
-        //     dominated by the acting region (with the Elephant’s tail), use the first 
-        //     clockwise region from that border where this is not true.
+      resolveElephantMarch: (regionId: string, shape?: ElephantShape) => {
+        const next = get().getMarchElephantState(regionId, shape);
+        console.log(`Elephant march from region ${regionId} with shape ${shape}:`, next);
+        get().moveElephant(next.tailRegion, next.headRegion);
       },
+
       getNextClockwisePosition(regionId: string, elephantState: ElephantState) {
         const state = get();
         const edgesClockwise = state.gameState.elephantBorderClockwise[regionId];
@@ -1112,41 +1329,71 @@ export const useGameStore = create<GameStore>()(
         );
         
         if (currentIndex === -1) {
-          console.log("getNextClockwisePosition returned a negative index, somethings wrong.")
+          console.warn(`getNextClockwisePosition could not find edge for ${regionId}`, elephantState);
           return edgesClockwise[0];
         }
         
         const nextIndex = (currentIndex + 1) % edgesClockwise.length;
         return edgesClockwise[nextIndex];
       },
-      getFullyFormedOrNextPosition(regionId: string) {
-        const state = get();
-        const elephantState = state.gameState.elephant;
-        const edges = state.gameState.elephantBorderClockwise[regionId];
-        
-        const currentRegionFlagColor = state.gameState.regions[regionId].flagColor;
-        let currentElephantState = elephantState;
-        
-        const headRegionFlagColor = state.gameState.regions[currentElephantState.headRegion].flagColor;
-        if (headRegionFlagColor !== currentRegionFlagColor) {
-          return currentElephantState;
-        }
-        
-        for (let i = 0; i < edges.length; i++) {
-          currentElephantState = this.getNextClockwisePosition(regionId, currentElephantState);
-          
-          const nextHeadRegionFlagColor = state.gameState.regions[currentElephantState.headRegion].flagColor;
-          if (nextHeadRegionFlagColor !== currentRegionFlagColor) {
-            return currentElephantState;
-          }
-        }
-        const firstEdge = edges[0];
-        return {
-          tailRegion: firstEdge.headRegion,
-          headRegion: firstEdge.tailRegion
-        };
 
-      },
+        getFullyFormedOrNextPosition(regionId: string, shape?: ElephantShape) {
+  const state = get();
+  const edges = state.gameState.elephantBorderClockwise[regionId];
+  const capitalRegion = state.gameState.regions[regionId];
+  const empireColor = capitalRegion.flagColor;
+  const resolvedShape: ElephantShape = shape ?? 'circle';
+  const shapeKey = `${resolvedShape}${regionId}`;
+
+  if (!edges || edges.length === 0) {
+    console.warn(`No clockwise elephant edges found for region: ${regionId}`);
+    return state.gameState.elephant;
+  }
+
+  const shapeMove = state.gameState.elephantRedirectLookup[shapeKey];
+
+  // Start from the current card shape's border. If that lookup is missing,
+  // fall back to the first clockwise edge.
+  const startingElephantState = shapeMove ?? edges[0];
+  let currentElephantState = startingElephantState;
+
+  const isRegionInSameEmpire = (targetRegionId: string) => {
+    const targetRegion = get().gameState.regions[targetRegionId];
+
+    return (
+      targetRegion &&
+      empireColor &&
+      targetRegion.flagColor === empireColor &&
+      (targetRegion.towerHasFlag || targetRegion.towerHasFlagStar)
+    );
+  };
+
+  console.log(
+    `Capital elephant movement from ${regionId} with shape ${resolvedShape}: starting ${startingElephantState.tailRegion} -> ${startingElephantState.headRegion}`
+  );
+
+  for (let i = 0; i < edges.length; i++) {
+    if (!isRegionInSameEmpire(currentElephantState.headRegion)) {
+      return currentElephantState;
+    }
+
+    currentElephantState = get().getNextClockwisePosition(
+      regionId,
+      currentElephantState
+    );
+  }
+
+  // Fully formed empire: reverse the current shape's border so the head faces the capital.
+  console.log(
+    `Fully surrounded capital. Reversing shape border: ${startingElephantState.headRegion} -> ${startingElephantState.tailRegion}`
+  );
+
+  return {
+    tailRegion: startingElephantState.headRegion,
+    headRegion: startingElephantState.tailRegion,
+  };
+},
+
       getCrisisType: () => {
         const state = get();
         const { elephant } = state.gameState;
@@ -1164,6 +1411,7 @@ export const useGameStore = create<GameStore>()(
         
         return 'invasion';
       },
+
       setStormDieResult: (result: StormDieSide) => set((state) => ({
         gameState: {
           ...state.gameState,
@@ -1174,7 +1422,7 @@ export const useGameStore = create<GameStore>()(
           }
         }
       })),
-      // Storm Die & Animation System
+
       startStormRoll: () => {
         console.log('Starting storm die roll animation...');
         
@@ -1188,15 +1436,6 @@ export const useGameStore = create<GameStore>()(
             }
           }
         }));
-        
-        // Safety timeout
-        // setTimeout(() => {
-        //   const state = get();
-        //   if (state.gameState.storm.isRolling) {
-        //     console.warn('Rolling state timeout - cancelling');
-        //     get().cancelRollingState();
-        //   }
-        // }, 10000);
       },
 
       completeStormRoll: (stormRoll: any) => {
@@ -1217,7 +1456,6 @@ export const useGameStore = create<GameStore>()(
       },
 
       completeStormRollForeignInvasion: (stormRoll: any) => {
-        //TODO. finish for ForeignInvasion
         console.log(`Storm die roll completed: ${stormRoll.value} events, direction: ${stormRoll.direction}`);
         
         set((state) => ({
@@ -1247,7 +1485,7 @@ export const useGameStore = create<GameStore>()(
         
         return stormRoll;
       },
-      //needs renamed- rolls storm die in app now doesnt start anything
+
       startEventPhaseWithStorm: () => {
         const stormRoll = rollStormDie();
         get().startStormRoll();
@@ -1375,11 +1613,6 @@ export const useGameStore = create<GameStore>()(
       // Helper functions
       getCurrentEvent: () => {
         const state = get();
-        // console.log("first ", !!(state.gameState.eventsRemaining <= 0));
-
-        // console.log("2nd ", !!(state.gameState.phase!== 'event'));
-
-        // console.log("3 ", !!state.gameState.currentEventId);
         if (!state.gameState.currentEventId) return null;
         
         try {
@@ -1442,6 +1675,7 @@ export const useGameStore = create<GameStore>()(
           };
         });
       },
+
       updateOrder: (orderId: string, updates: Partial<Order>) => {
         set((state) => {
           const order = state.gameState.orders[orderId];
@@ -1511,6 +1745,7 @@ export const useGameStore = create<GameStore>()(
           }
         });
       },
+
       drawNextEvent: () => {
         const state = get();
         
@@ -1521,7 +1756,6 @@ export const useGameStore = create<GameStore>()(
 
         console.log(`Drawing next event (${state.gameState.eventsRemaining} remaining)`);
         
-        // Decrement events remaining
         set((state) => ({
           gameState: {
             ...state.gameState,
@@ -1531,9 +1765,9 @@ export const useGameStore = create<GameStore>()(
 
         get().drawEvent();
       },
-      // In the store implementation, add these actions:
+
       completeEventPhase: () => {
-        console.log("trying to finish event phase");
+        console.log('trying to finish event phase');
         set((state) => ({
           gameState: {
             ...state.gameState,
@@ -1543,16 +1777,15 @@ export const useGameStore = create<GameStore>()(
         }));
       },
 
-
       startCompanyPhase: () => {
-      set((state) => ({
-        gameState: {
-          ...state.gameState,
-          phase: 'company',
-          history: [],
-        }
-      }));
-    },
+        set((state) => ({
+          gameState: {
+            ...state.gameState,
+            phase: 'company',
+            history: [],
+          }
+        }));
+      },
 
       isEventPhaseComplete: () => {
         const state = get();
@@ -1562,16 +1795,16 @@ export const useGameStore = create<GameStore>()(
     {
       name: 'joco-game-storage',
       partialize: (state) => ({ 
-  currentScenario: state.currentScenario,
-  gameState: {
-    ...state.gameState,
-    history: [],
-    storm: {
-      ...state.gameState.storm,
-      isRolling: false
-    }
-  }
-}),
+        currentScenario: state.currentScenario,
+        gameState: {
+          ...state.gameState,
+          history: [],
+          storm: {
+            ...state.gameState.storm,
+            isRolling: false
+          }
+        }
+      }),
       onRehydrateStorage: () => {
         return (state) => {
           if (state) {

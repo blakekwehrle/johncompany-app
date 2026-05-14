@@ -426,14 +426,14 @@ export const elephantBorderClockwise: Record<string, ElephantState[]> = {
     { tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.MYSORE },
   ],
   [REGION_IDS.MYSORE]: [
-    { tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.BOMBAY },
-    { tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.HYDERABAD },
-    { tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.MADRAS },
-  ],
-  [REGION_IDS.MADRAS]: [
-    { tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.MYSORE },
-    { tailRegion: REGION_IDS.HYDERABAD, headRegion: REGION_IDS.HYDERABAD },
-  ],
+  { tailRegion: REGION_IDS.MYSORE, headRegion: REGION_IDS.BOMBAY },
+  { tailRegion: REGION_IDS.MYSORE, headRegion: REGION_IDS.HYDERABAD },
+  { tailRegion: REGION_IDS.MYSORE, headRegion: REGION_IDS.MADRAS },
+],
+[REGION_IDS.MADRAS]: [
+  { tailRegion: REGION_IDS.MADRAS, headRegion: REGION_IDS.HYDERABAD },
+  { tailRegion: REGION_IDS.MADRAS, headRegion: REGION_IDS.MYSORE },
+],
 };
 
 /*

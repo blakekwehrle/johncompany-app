@@ -56,6 +56,17 @@ const COLOR_TO_REGION: Record<string, string> = {
   'e8c07e': REGION_IDS.MADRAS,     
 };
 
+const ELEPHANT_DEBUG_REGIONS = [
+  REGION_IDS.PUNJAB,
+  REGION_IDS.DELHI,
+  REGION_IDS.BENGAL,
+  REGION_IDS.BOMBAY,
+  REGION_IDS.MARATHA,
+  REGION_IDS.HYDERABAD,
+  REGION_IDS.MYSORE,
+  REGION_IDS.MADRAS,
+];
+
 const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, currentPhase }) => {
   const { gameState } = useGameStore();
   const [isZoomed, setIsZoomed] = useState(false);
@@ -63,6 +74,9 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
   const [imageData, setImageData] = useState<ImageData | null>(null);
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [displayRect, setDisplayRect] = useState({ left: 0, top: 0, width: 0, height: 0 });
+  const [showElephantHelper, setShowElephantHelper] = useState(false);
+  const [debugTailRegion, setDebugTailRegion] = useState(gameState.elephant.tailRegion);
+  const [debugHeadRegion, setDebugHeadRegion] = useState(gameState.elephant.headRegion);
   const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   
@@ -463,31 +477,63 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
       );
     });
   };
-  const renderElephant = (regionIdFront: string, regionIdBack: string) => {
-    const elephant = elephantPositions[regionIdFront+regionIdBack][0] || [];
-    if (!elephant) return null;
+  const renderElephant = () => {
+  const storedHeadRegion = gameState.elephant.headRegion;
+  const storedTailRegion = gameState.elephant.tailRegion;
 
-    const absolutePos = getAbsolutePosition(elephant);
-    
-    return (
+  // When the helper is on, render a local test elephant without changing game state.
+  const headRegion = showElephantHelper ? debugHeadRegion : storedHeadRegion;
+  const tailRegion = showElephantHelper ? debugTailRegion : storedTailRegion;
+
+  // State stores tail -> head.
+  const renderKey = tailRegion + headRegion;
+  const elephant = elephantPositions[renderKey]?.[0];
+
+  if (!elephant) {
+    console.warn(`No elephant render data for key: ${renderKey}`);
+    return null;
+  }
+
+  const absolutePos = getAbsolutePosition(elephant);
+
+  return (
+    <div
+      key={`elephant-facing-${headRegion}-from-${tailRegion}`}
+      className="absolute"
+      style={{
+        left: absolutePos.x - 20,
+        top: absolutePos.y - 20,
+        zIndex: 49
+      }}
+      title={`Elephant from ${tailRegion} facing ${headRegion}`}
+    >
+      <img
+        src={elephantImg}
+        alt="Elephant"
+        className={`w-7 h-10 transform ${elephant.rotation} scale-x-[-1]`}
+      />
+
       <div
-        key={`elephant-facing-${elephant.regionIdFront}-from-${elephant.regionIdBack}`}
-        className="absolute"
         style={{
-          left: absolutePos.x - 20,
-          top: absolutePos.y - 20,
-          zIndex: 49
+          position: 'absolute',
+          left: '50%',
+          top: '100%',
+          transform: 'translateX(-50%)',
+          marginTop: '4px',
+          padding: '2px 5px',
+          borderRadius: '4px',
+          background: showElephantHelper ? 'rgba(146, 64, 14, 0.9)' : 'rgba(0, 0, 0, 0.75)',
+          color: 'white',
+          fontSize: '10px',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
         }}
-        title={`${elephant.regionIdFront} facing Elephant from ${elephant.regionIdBack}`}
       >
-        <img 
-          src={elephantImg} 
-          alt="Elephant" 
-          className={`w-7 h-10 transform rotate-180${elephant.rotation}`} 
-        />
+        {tailRegion} → {headRegion}
       </div>
-    );
-  };
+    </div>
+  );
+};
   
   // Don't render detailed view anymore since we're handling everything on the main map
   if (isZoomed && selectedRegion) {
@@ -574,8 +620,68 @@ const MapView: React.FC<MapViewProps> = ({ selectedRegion, onRegionSelect, curre
         </div>
       )}
 
+      {/* Elephant placement helper - local visual test only, does not change game state */}
+      <div
+        className="absolute bg-black bg-opacity-75 text-white text-xs rounded-lg p-2 shadow-lg"
+        style={{ left: 8, top: 8, zIndex: 80 }}
+        onClick={(event) => event.stopPropagation()}
+        onMouseMove={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="px-2 py-1 bg-amber-600 rounded hover:bg-amber-700"
+          onClick={() => setShowElephantHelper((prev) => !prev)}
+        >
+          Elephant Helper: {showElephantHelper ? 'ON' : 'OFF'}
+        </button>
+
+        {showElephantHelper && (
+          <div className="mt-2 flex flex-col gap-2">
+            <label className="flex items-center gap-2">
+              <span className="w-10">Tail</span>
+              <select
+                className="text-black rounded px-1 py-0.5"
+                value={debugTailRegion}
+                onChange={(event) => setDebugTailRegion(event.target.value)}
+              >
+                {ELEPHANT_DEBUG_REGIONS.map((regionId) => (
+                  <option key={`tail-${regionId}`} value={regionId}>
+                    {regionId}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex items-center gap-2">
+              <span className="w-10">Head</span>
+              <select
+                className="text-black rounded px-1 py-0.5"
+                value={debugHeadRegion}
+                onChange={(event) => setDebugHeadRegion(event.target.value)}
+              >
+                {ELEPHANT_DEBUG_REGIONS.map((regionId) => (
+                  <option key={`head-${regionId}`} value={regionId}>
+                    {regionId}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="leading-tight">
+              Key: {debugTailRegion + debugHeadRegion}
+              <br />
+              Saved: {gameState.elephant.tailRegion} → {gameState.elephant.headRegion}
+              <br />
+              {elephantPositions[debugTailRegion + debugHeadRegion]?.[0]
+                ? `x: ${elephantPositions[debugTailRegion + debugHeadRegion][0].x}, y: ${elephantPositions[debugTailRegion + debugHeadRegion][0].y}, ${elephantPositions[debugTailRegion + debugHeadRegion][0].rotation}`
+                : 'No render position exists for this pair'}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Render Elephant */}
-      {renderElephant(gameState.elephant.headRegion, gameState.elephant.tailRegion)}
+      {renderElephant()}
 
       {/* Render Orders */}
       {Object.keys(gameState.regions).map(regionId => 
