@@ -95,7 +95,7 @@ interface GameStore {
 }
 
 //Helper to make sure empires are removed when the capital remains and no other dominated regions
-const removeLonelyEmpireCapitals = <T extends Record<string, any>>(regions: T): T => {
+const removeLonelyEmpireCapitals = (regions: Record<string, any>): Record<string, any> => {
   const updatedRegions = { ...regions };
 
   const capitalRegions = Object.values(updatedRegions).filter(
@@ -683,8 +683,6 @@ export const useGameStore = create<GameStore>()(
 
       resolveInvasionCrisis: (attackerRegionId: string, defenderRegionId: string, modifier: number) => {
   const state = get();
-  const attackerRegion = state.gameState.regions[attackerRegionId];
-  const defenderRegion = state.gameState.regions[defenderRegionId];
 
   const getInvasionCombatStrength = (regionId: string) => {
     const region = state.gameState.regions[regionId];
